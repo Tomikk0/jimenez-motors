@@ -850,36 +850,28 @@ async function markAsSold(carId) {
       return;
     }
 
-    // MEGERŐSÍTŐ ABLAK
-    const confirmed = confirm(`Biztosan eladottá teszed ezt az autót?\n\nModell: ${car.model}\nEladó: ${currentUser.tagName}`);
-    
-    if (!confirmed) {
-      return;
-    }
-
-    // AUTÓ FRISSÍTÉSE - hozzáadjuk, hogy ki adta el
+    // AUTÓ FRISSÍTÉSE - NINCS MEGERŐSÍTŐ ABLAK!
     const { error } = await supabase
       .from('cars')
       .update({ 
         sold: true,
-        sold_by: currentUser.tagName,  // Ki adta el
-        sold_at: new Date().toISOString()  // Mikor adták el
+        sold_by: currentUser.tagName,
+        sold_at: new Date().toISOString()
       })
       .eq('id', carId);
 
     if (error) {
       showMessage('Hiba: ' + error.message, 'error');
     } else {
-      showMessage(`✅ Autó eladva státuszba állítva! (Eladó: ${currentUser.tagName})`, 'success');
+      showMessage(`✅ Autó eladva! (Eladó: ${currentUser.tagName})`, 'success');
       loadCars();
       loadStats();
     }
   } catch (error) {
     console.error('markAsSold hiba:', error);
-    showMessage('Hiba történt az eladott státusz beállítása során', 'error');
+    showMessage('Hiba történt az eladás során', 'error');
   }
 }
-
 async function deleteCar(carId) {
   try {
     if (!currentUser) {
@@ -1068,3 +1060,4 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
