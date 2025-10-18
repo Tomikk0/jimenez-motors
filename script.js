@@ -311,16 +311,32 @@ function renderTuningOptions(options) {
 
 async function loadModelOptions() {
   try {
-    modelOptions = [
-      'Adder', 'Akuma', 'Asbo', 'Asterope', 'Banshee', 'Blista', 'Brioso', 'Buffalo', 
-      'Bullet', 'Carbonizzare', 'Comet', 'Coquette', 'Dominator', 'Elegy', 'Entity XF', 
-      'Feltzer', 'Fugitive', 'Furore GT', 'Futo', 'Gauntlet', 'Infernus', 'Issi', 
-      'Jackal', 'Jester', 'Khamelion', 'Kuruma', 'Massacro', 'Monroe', '9F', 'Omnis', 
-      'Penumbra', 'Rapid GT', 'Reaper', 'Rhapsody', 'Rocoto', 'Ruffian', 'Sultan', 
-      'Surano', 'Turismo R', 'Vacca', 'Voltic', 'Zentorno', 'Zion'
-    ];
+    // Modellek betöltése az adatbázisból
+    const { data, error } = await supabase
+      .from('car_models')
+      .select('name, brand')
+      .order('brand')
+      .order('name');
+
+    if (error) throw error;
+    
+    // Ha vannak modellek az adatbázisban, használjuk azokat
+    if (data && data.length > 0) {
+      modelOptions = data.map(item => item.name);
+    } else {
+      // Ha nincsenek, használjuk a hardcode-olt listát
+      modelOptions = [
+        'BMW M3', 'BMW M4', 'BMW M5', 'Mercedes C63 AMG', 'Mercedes E63 AMG',
+        'Audi RS6', 'Audi RS7', 'Audi RS5', 'Porsche 911', 'Lamborghini Huracan'
+      ];
+    }
   } catch (error) {
     console.error('Model options load error:', error);
+    // Fallback lista
+    modelOptions = [
+      'BMW M3', 'BMW M4', 'BMW M5', 'Mercedes C63 AMG', 'Mercedes E63 AMG',
+      'Audi RS6', 'Audi RS7', 'Audi RS5', 'Porsche 911', 'Lamborghini Huracan'
+    ];
   }
 }
 
@@ -994,3 +1010,4 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
