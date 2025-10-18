@@ -502,15 +502,25 @@ function renderCars(cars) {
       const eladasiAr = c.EladasiArFormatted || c.EladasiAr || '';
       
 let imageHtml = '';
+let imageUrl = '';
+
+// Először próbáljuk a Supabase storage-t
 if (c.image_url && c.image_url.trim() !== '') {
-  const imageUrl = getImageUrl(c.image_url);
+  imageUrl = getImageUrl(c.image_url);
+} 
+// Ha nincs storage kép, próbáljuk a base64-t
+else if (c.image_data_url && c.image_data_url.trim() !== '') {
+  imageUrl = c.image_data_url;
+}
+
+if (imageUrl) {
   imageHtml = `
     <td>
       <img src="${imageUrl}" 
            class="car-image" 
            onclick="showImageModal('${imageUrl}')"
            alt="${escapeHtml(c.Model || '')}"
-           onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\\'no-image\\'>Hiba<br>kép</div>'">
+           onerror="this.onerror=null; this.src=''; this.parentNode.innerHTML='<div class=\\'no-image\\'>Hiba<br>kép</div>'">
     </td>
   `;
 } else {
@@ -1045,6 +1055,7 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
 
 
 
