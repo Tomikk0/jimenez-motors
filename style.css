@@ -391,14 +391,6 @@ tr:hover {
   transform: scale(0.95);
 }
 
-/* Eladva státusz stílus */
-.sold-by-info {
-  font-size: 11px;
-  color: #666;
-  margin-top: 4px;
-  display: block;
-}
-
 .action-buttons {
   display: flex;
   gap: 8px;
@@ -540,6 +532,14 @@ tr:hover {
   display: table-cell;
 }
 
+/* Eladva státusz stílus */
+.sold-by-info {
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+  display: block;
+}
+
 /* Reszponzív design */
 @media (max-width: 768px) {
   body {
@@ -577,4 +577,3 @@ tr:hover {
     height: 45px;
   }
 }
-
