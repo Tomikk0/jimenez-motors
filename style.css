@@ -379,10 +379,24 @@ tr:hover {
   cursor: pointer;
   font-size: 12px;
   margin: 2px;
+  transition: background 0.2s;
 }
 
 .btn-sold:hover {
   background: #218838;
+  transform: scale(1.05);
+}
+
+.btn-sold:active {
+  transform: scale(0.95);
+}
+
+/* Eladva státusz stílus */
+.sold-by-info {
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+  display: block;
 }
 
 .action-buttons {
@@ -563,3 +577,4 @@ tr:hover {
     height: 45px;
   }
 }
+
