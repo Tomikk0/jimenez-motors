@@ -738,46 +738,93 @@ async function addCar() {
       return;
     }
 
-    // ... egyéb adatok gyűjtése ...
+    const selectedModel = document.getElementById('modelSearch').value.trim();
+    const selectedTuning = Array.from(document.querySelectorAll('.tuning-option.selected'))
+      .map(div => div.textContent)
+      .join(', ');
 
-    // KÉPFELTÖLTÉS - JAVÍTOTT VERZIÓ
-    let imagePath = null;
-    if (selectedImage && selectedImage.data) {
-      console.log('🖼 Kép feltöltés kezdése...', selectedImage.name);
-      
-      const fileName = `cars/${Date.now()}-${selectedImage.name}`;
-      const blob = base64ToBlob(selectedImage.data, selectedImage.mimeType);
-      
-      console.log('📤 Feltöltés...', fileName);
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('car-images')
-        .upload(fileName, blob, {
-          cacheControl: '3600',
-          upsert: false
-        });
-      
-      if (uploadError) {
-        console.error('❌ Képfeltöltés hiba:', uploadError);
-        showMessage('Kép feltöltése sikertelen: ' + uploadError.message, 'error');
-        return;
-      } else {
-        console.log('✅ Kép feltöltve:', uploadData);
-        imagePath = uploadData.path;
-        
-        // Ellenőrizzük az URL-t
-        const { data: urlData } = supabase.storage
-          .from('car-images')
-          .getPublicUrl(imagePath);
-        console.log('🔗 Kép URL:', urlData.publicUrl);
-      }
+    if (!selectedModel) {
+      showMessage('Válassz modellt!', 'warning');
+      return;
     }
 
-    // ... autó hozzáadása ...
+    const vetelAr = document.getElementById('vetel').value.replace(/[^\d]/g, '');
+    const kivantAr = document.getElementById('kivant').value.replace(/[^\d]/g, '');
+    const eladasiAr = document.getElementById('eladas').value.replace(/[^\d]/g, '');
+
+    const carData = {
+      model: selectedModel,
+      tuning: selectedTuning,
+      purchase_price: vetelAr ? parseInt(vetelAr) : null,
+      desired_price: kivantAr ? parseInt(kivantAr) : null,
+      sale_price: eladasiAr ? parseInt(eladasiAr) : null,
+      added_by: currentUser.tagName,
+      sold: false,
+      image_data_url: selectedImage ? selectedImage.dataUrl : null // BASE64 tárolás
+    };
+
+    const validationErrors = validateCarData(carData);
+    if (validationErrors.length > 0) {
+      showMessage(validationErrors.join(', '), 'error');
+      return;
+    }
+
+    console.log('🚗 Autó adatok:', carData);
     
+    const { data, error } = await supabase
+      .from('cars')
+      .insert([carData])
+      .select();
+
+    if (error) {
+      console.error('❌ Autó hozzáadás hiba:', error);
+      showMessage('Hiba az autó hozzáadásában: ' + error.message, 'error');
+    } else {
+      console.log('✅ Autó hozzáadva:', data);
+      showMessage('Autó sikeresen hozzáadva!', 'success');
+      clearInputs();
+      clearImage();
+      loadCars();
+      loadStats();
+    }
+
   } catch (error) {
     console.error('addCar hiba:', error);
-    showMessage('Hiba történt: ' + error.message, 'error');
+    showMessage('Hiba történt az autó hozzáadása során', 'error');
   }
+}
+
+// És a képkezelés egyszerűsítése
+function handleImageSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (file.size > 5 * 1024 * 1024) {
+    showMessage('A kép mérete túl nagy! Maximum 5MB lehet.', 'error');
+    return;
+  }
+
+  if (!file.type.match('image.*')) {
+    showMessage('Csak képeket tölthetsz fel!', 'error');
+    return;
+  }
+
+  document.getElementById('imageFileName').textContent = file.name;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const preview = document.getElementById('imagePreview');
+    preview.innerHTML = `<img src="${e.target.result}" alt="Előnézet">`;
+    
+    // Tároljuk a teljes data URL-t
+    selectedImage = {
+      dataUrl: e.target.result, // teljes data:image/... URL
+      name: file.name
+    };
+    
+    console.log('📷 Kép betöltve, méret:', Math.round(e.target.result.length / 1024) + 'KB');
+  };
+  reader.readAsDataURL(file);
 }
 
 async function markAsSold(carId) {
@@ -1009,6 +1056,7 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
 
 
 
