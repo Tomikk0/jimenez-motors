@@ -70,7 +70,11 @@ function showImageModal(imageUrl) {
 
 function getImageUrl(imagePath) {
   if (!imagePath) return '';
+  
+  // Ha már teljes URL, használjuk azt
   if (imagePath.startsWith('http')) return imagePath;
+  
+  // Supabase storage URL összeállítása
   return `${supabaseUrl}/storage/v1/object/public/car-images/${imagePath}`;
 }
 
@@ -1033,5 +1037,6 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
 
 
