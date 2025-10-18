@@ -269,21 +269,44 @@ async function loadAllData() {
 
 async function loadTuningOptions() {
   try {
-    tuningOptions = [
-      'Teljesen alap',
-      'Stage 1 tuning',
-      'Stage 2 tuning', 
-      'Stage 3 tuning',
-      'Sport váltó',
-      'Sport felfüggesztés',
-      'Nitró',
-      'Turbo',
-      'Supercharger',
-      'Test tuning'
-    ];
+    // Tuning opciók betöltése az adatbázisból
+    const { data, error } = await supabase
+      .from('tuning_options')
+      .select('name')
+      .order('name');
+
+    if (error) throw error;
+    
+    // Ha vannak tuning opciók az adatbázisban, használjuk azokat
+    if (data && data.length > 0) {
+      tuningOptions = data.map(item => item.name);
+    } else {
+      // Ha nincsenek, használjuk a hardcode-olt listát
+      tuningOptions = [
+        'Motor 1', 'Motor 2', 'Motor 3',
+        'Chip 1', 'Chip 2', 'Chip 3',
+        'Váltó 1', 'Váltó 2', 'Váltó 3',
+        'Kerék 1', 'Kerék 2', 'Kerék 3',
+        'Metál', 'Matt', 'Króm',
+        'Neon', 'Lámpa', 'BF',
+        'Turbó', 'Drivetype', 'Kompresszor', 'Nitro'
+      ];
+    }
+    
     renderTuningOptions(tuningOptions);
   } catch (error) {
     console.error('Tuning options load error:', error);
+    // Fallback lista
+    tuningOptions = [
+      'Motor 1', 'Motor 2', 'Motor 3',
+      'Chip 1', 'Chip 2', 'Chip 3',
+      'Váltó 1', 'Váltó 2', 'Váltó 3',
+      'Kerék 1', 'Kerék 2', 'Kerék 3',
+      'Metál', 'Matt', 'Króm',
+      'Neon', 'Lámpa', 'BF',
+      'Turbó', 'Drivetype', 'Kompresszor', 'Nitro'
+    ];
+    renderTuningOptions(tuningOptions);
   }
 }
 
@@ -1010,4 +1033,5 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
 
