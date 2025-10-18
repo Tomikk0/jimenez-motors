@@ -1,6 +1,9 @@
+// === DEBUG INFORMÁCIÓ ===
+console.log('🔄 Script betöltődött');
+
 // === SUPABASE KAPCSOLAT === 
 const supabaseUrl = 'https://abpmluenermqghrrtjhq.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFicG1sdWVuZXJtcWdocnJ0amhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3MTYzMjgsImV4cCI6MjA3NjI5MjMyOH0.YkTZME_BB86r3mM8AyNYu-2yaMdh4LtDhHbynvdkaKA'; // 🔑 Itt add meg!
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFicG1sdWVuZXJtcWdocnJ0amhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3MTYzMjgsImV4cCI6MjA3NjI5MjMyOH0.YkTZME_BB86r3mM8AyNYu-2yaMdh4LtDhHbynvdkaKA';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let tuningOptions = [];
@@ -10,6 +13,250 @@ let allCars = [];
 let currentUser = null;
 let searchTimeout;
 let selectedImage = null;
+let currentCarIdForSale = null;
+
+// === BEJELENTKEZÉSI ÁLLAPOT MENTÉSE ===
+function saveLoginState(user) {
+    try {
+        const userData = {
+            username: user.username,
+            tagName: user.tagName,
+            role: user.role,
+            rank: user.rank,
+            loginTime: new Date().getTime()
+        };
+        localStorage.setItem('jimenezMotors_user', JSON.stringify(userData));
+        console.log('💾 Bejelentkezés mentve:', userData.tagName);
+        return true;
+    } catch (error) {
+        console.error('❌ Hiba mentéskor:', error);
+        return false;
+    }
+}
+
+function loadLoginState() {
+    try {
+        const saved = localStorage.getItem('jimenezMotors_user');
+        console.log('📖 Mentett bejelentkezés betöltése...');
+        
+        if (saved) {
+            const userData = JSON.parse(saved);
+            console.log('📋 UserData betöltve:', userData);
+            
+            // Egyszerű ellenőrzés - ha van tagName, akkor jó
+            if (userData && userData.tagName) {
+                console.log('✅ Érvényes bejelentkezés betöltve:', userData.tagName);
+                return userData;
+            }
+        }
+        console.log('❌ Nincs érvényes mentett bejelentkezés');
+        return null;
+    } catch (error) {
+        console.error('❌ Hiba betöltéskor:', error);
+        return null;
+    }
+}
+
+function clearLoginState() {
+    localStorage.removeItem('jimenezMotors_user');
+    console.log('🗑️ Bejelentkezési adatok törölve');
+}
+
+// === UI FRISSÍTÉS ===
+function updateUIForLoginState() {
+    console.log('🎨 UI frissítése, currentUser:', currentUser);
+    
+    const isLoggedIn = !!currentUser;
+    
+    // Admin funkciók
+    const adminFunctions = document.getElementById('adminFunctions');
+    if (adminFunctions) adminFunctions.style.display = isLoggedIn ? 'block' : 'none';
+    
+    
+    // Táblázat fejlécek
+    const kivantHeader = document.getElementById('kivantHeader');
+    const actionHeader = document.getElementById('actionHeader');
+    const tagActionHeader = document.getElementById('tagActionHeader');
+    const vetelHeader = document.getElementById('vetelHeader');
+    
+    if (kivantHeader) kivantHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
+    if (actionHeader) actionHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
+    if (tagActionHeader) tagActionHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
+    if (vetelHeader) vetelHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
+    
+    // FRISSÍTÉS GOMB - CSAK BEJELENTKEZÉS NÉLKÜL
+    const refreshButtonContainer = document.getElementById('refreshButtonContainer');
+    if (refreshButtonContainer) {
+        refreshButtonContainer.style.display = isLoggedIn ? 'none' : 'block';
+    }
+    
+    // Login gombok
+    document.querySelectorAll('.login-btn').forEach(btn => {
+        if (isLoggedIn) {
+            btn.innerHTML = '🚪 Kijelentkezés (' + currentUser.tagName + ')';
+            btn.onclick = logout;
+        } else {
+            btn.innerHTML = '🔐 Bejelentkezés';
+            btn.onclick = () => showPage('login');
+        }
+    });
+    
+    // Body class
+    if (isLoggedIn) {
+        document.body.classList.add('logged-in');
+    } else {
+        document.body.classList.remove('logged-in');
+    }
+    
+    // Statisztika gomb
+    updateStatisztikaButton();
+    
+    console.log('✅ UI frissítve, logged-in:', isLoggedIn);
+}
+
+function updateStatisztikaButton() {
+    const statBtn = document.querySelector('.nav-btn[onclick="showPage(\'statisztika\')"]');
+    if (statBtn) {
+        statBtn.style.display = currentUser ? 'inline-block' : 'none';
+    }
+}
+
+// === BEJELENTKEZÉS/KIJELENTKEZÉS ===
+async function login() {
+    try {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        console.log('🔐 Login próbálkozás:', username);
+        
+        if (!username || !password) {
+            showLoginMessage('Írd be a felhasználónevet és jelszót!', 'warning');
+            return;
+        }
+
+        const { data: users, error } = await supabase
+            .from('app_users')
+            .select('*')
+            .eq('username', username);
+
+        if (error || !users || users.length === 0) {
+            console.log('❌ Login hiba: felhasználó nem található');
+            showLoginMessage('Hibás felhasználónév vagy jelszó!', 'error');
+            return;
+        }
+
+        const user = users[0];
+        
+        if (user.password_hash === btoa(password)) {
+            currentUser = { 
+                username: user.username, 
+                role: user.role,
+                tagName: user.member_name,
+                rank: user.rank 
+            };
+            
+            console.log('✅ Sikeres login:', currentUser);
+            
+            // Mentés és UI frissítés
+            saveLoginState(currentUser);
+            updateUIForLoginState();
+            
+            // Adatok betöltése
+            loadCars();
+            loadTags();
+            
+            showPage('autok');
+            showMessage('Sikeres bejelentkezés!', 'success');
+        } else {
+            console.log('❌ Hibás jelszó');
+            showLoginMessage('Hibás jelszó!', 'error');
+        }
+    } catch (error) {
+        console.error('❌ Login hiba:', error);
+        showLoginMessage('Hiba történt a bejelentkezés során', 'error');
+    }
+}
+
+function logout() {
+    try {
+        console.log('🚪 Kijelentkezés');
+        currentUser = null;
+        
+        // Törlés és UI frissítés
+        clearLoginState();
+        updateUIForLoginState();
+        
+        // Adatok betöltése
+        loadCars();
+        loadTags();
+        
+        showPage('autok');
+        showMessage('Sikeres kijelentkezés!', 'success');
+    } catch (error) {
+        console.error('❌ Logout hiba:', error);
+    }
+}
+
+// ===== OLDAL KEZELÉS =====
+function showPage(pageName) {
+  try {
+    console.log('🔄 Oldalváltás:', pageName);
+    
+    // Összes oldal elrejtése
+    const allPages = document.querySelectorAll('.page');
+    allPages.forEach(page => {
+      page.classList.remove('active');
+    });
+    
+    // Összes gomb inaktívvá tétele
+    const allButtons = document.querySelectorAll('.nav-btn');
+    allButtons.forEach(btn => {
+      btn.classList.remove('active');
+    });
+    
+    // Új oldal megjelenítése
+    const targetPage = document.getElementById(pageName + 'Page');
+    if (targetPage) {
+      targetPage.classList.add('active');
+      console.log('✅ Oldal megjelenítve:', pageName + 'Page');
+      
+      // Login oldal speciális kezelése
+      if (pageName === 'login') {
+        setTimeout(() => {
+          setupEnterKeyListener();
+          const usernameInput = document.getElementById('username');
+          if (usernameInput) usernameInput.focus();
+        }, 100);
+      }
+    }
+    
+    // Aktív gomb beállítása
+    const activeButton = document.querySelector(`.nav-btn[onclick="showPage('${pageName}')"]`);
+    if (activeButton) {
+      activeButton.classList.add('active');
+    }
+    
+    // Adatok betöltése
+    switch(pageName) {
+      case 'autok':
+        console.log('🚗 Autók betöltése...');
+        loadCars();
+        break;
+      case 'tagok':
+        console.log('👥 Tagok betöltése...');
+        loadTags();
+        break;
+      case 'statisztika':
+        console.log('📊 Statisztika betöltése...');
+        loadStats();
+        break;
+    }
+    
+  } catch (error) {
+    console.error('❌ showPage hiba:', error);
+    showPage('autok');
+  }
+}
 
 // ===== KÉPKEZELÉS =====
 function handleImageSelect(event) {
@@ -51,27 +298,96 @@ function clearImage() {
 }
 
 function showImageModal(imageUrl) {
+  console.log('🖼 Modal megnyitása képhez:', imageUrl);
+  
+  // Ellenőrizzük, hogy van-e kép URL
+  if (!imageUrl || imageUrl === '' || imageUrl.includes('undefined')) {
+    console.log('❌ Nincs érvényes kép URL');
+    showMessage('Nincs elérhető kép a megjelenítéshez', 'warning');
+    return;
+  }
+
+  // Modal elem létrehozása
   const modal = document.createElement('div');
   modal.className = 'image-modal';
   modal.style.display = 'block';
-  modal.innerHTML = `
-    <span class="close-modal" onclick="this.parentElement.style.display='none'">&times;</span>
-    <img class="modal-content" src="${getImageUrl(imageUrl)}">
-  `;
+  
+  // Kép elem létrehozása
+  const img = document.createElement('img');
+  img.className = 'modal-content';
+  img.src = imageUrl;
+  img.alt = 'Autó kép';
+  
+  // Hibakezelés
+  img.onload = function() {
+    console.log('✅ Kép sikeresen betöltve');
+  };
+  
+  img.onerror = function() {
+    console.log('❌ Kép betöltési hiba');
+    img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjhmOWZhIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPktJUCBORSBNVUtPRElLPC90ZXh0Pgo8L3N2Zz4=';
+  };
+
+  // Bezáró gomb
+  const closeSpan = document.createElement('span');
+  closeSpan.className = 'close-modal';
+  closeSpan.innerHTML = '&times;';
+  closeSpan.onclick = function() {
+    modal.style.display = 'none';
+    document.body.removeChild(modal);
+  };
+
+  // Modal összeállítása
+  modal.appendChild(closeSpan);
+  modal.appendChild(img);
+
+  // Modal hozzáadása a body-hoz
   document.body.appendChild(modal);
 
+  // Kattintás a modal-on kívülre is bezárja
   modal.onclick = function(e) {
     if (e.target === modal) {
       modal.style.display = 'none';
       document.body.removeChild(modal);
     }
   };
+
+  // ESC billentyű is bezárja
+  document.addEventListener('keydown', function escHandler(e) {
+    if (e.key === 'Escape') {
+      modal.style.display = 'none';
+      document.body.removeChild(modal);
+      document.removeEventListener('keydown', escHandler);
+    }
+  });
 }
 
 function getImageUrl(imagePath) {
-  if (!imagePath) return '';
-  if (imagePath.startsWith('http')) return imagePath;
-  return `${supabaseUrl}/storage/v1/object/public/car-images/${imagePath}`;
+  console.log('🔗 Kép URL generálás:', imagePath);
+  
+  if (!imagePath) {
+    console.log('❌ Nincs kép path');
+    return '';
+  }
+  
+  if (imagePath.startsWith('http')) {
+    console.log('✅ HTTP URL');
+    return imagePath;
+  }
+  
+  if (imagePath.startsWith('data:image')) {
+    console.log('✅ Base64 kép');
+    return imagePath;
+  }
+  
+  if (imagePath.includes('undefined')) {
+    console.log('❌ Undefined kép');
+    return '';
+  }
+  
+  const finalUrl = `${supabaseUrl}/storage/v1/object/public/car-images/${imagePath}`;
+  console.log('✅ Supabase URL:', finalUrl);
+  return finalUrl;
 }
 
 // ===== SEGÉDFÜGGVÉNYEK =====
@@ -83,69 +399,6 @@ function escapeHtml(unsafe) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
-}
-
-function validateCarData(car) {
-  const errors = [];
-  
-  if (!car.model || car.model.trim() === '') {
-    errors.push('A modell megadása kötelező');
-  }
-  
-  if (car.purchase_price && isNaN(parseInt(car.purchase_price))) {
-    errors.push('A vételár érvényes szám legyen');
-  }
-  
-  if (car.sale_price && isNaN(parseInt(car.sale_price))) {
-    errors.push('Az eladási ár érvényes szám legyen');
-  }
-  
-  if (car.purchase_price && car.sale_price) {
-    const vetel = parseInt(car.purchase_price);
-    const eladas = parseInt(car.sale_price);
-    if (eladas < vetel) {
-      errors.push('Az eladási ár nem lehet kisebb a vételárnál');
-    }
-  }
-  
-  return errors;
-}
-
-function base64ToBlob(base64, mimeType) {
-  const byteCharacters = atob(base64);
-  const byteArrays = [];
-  
-  for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-    const slice = byteCharacters.slice(offset, offset + 512);
-    const byteNumbers = new Array(slice.length);
-    
-    for (let i = 0; i < slice.length; i++) {
-      byteNumbers[i] = slice.charCodeAt(i);
-    }
-    
-    const byteArray = new Uint8Array(byteNumbers);
-    byteArrays.push(byteArray);
-  }
-  
-  return new Blob(byteArrays, { type: mimeType });
-}
-
-// ===== ALAP FUNKCIÓK =====
-function showPage(pageName) {
-  try {
-    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-    
-    document.getElementById(pageName + 'Page').classList.add('active');
-    document.querySelector(`[onclick="showPage('${pageName}')"]`).classList.add('active');
-    
-    if (pageName === 'autok') loadCars();
-    else if (pageName === 'tagok') loadTags();
-    else if (pageName === 'statisztika') loadStats();
-  } catch (error) {
-    console.error('showPage hiba:', error);
-    showMessage('Hiba történt az oldalváltás során', 'error');
-  }
 }
 
 function showMessage(text, type = 'success') {
@@ -173,83 +426,6 @@ function showTagMessage(text, type = 'success') {
   messageEl.className = `message ${type}`;
   messageEl.style.display = 'block';
   setTimeout(() => { messageEl.style.display = 'none'; }, 3000);
-}
-
-// ===== BEJELENTKEZÉS =====
-async function login() {
-  try {
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    
-    if (!username || !password) {
-      showLoginMessage('Írd be a felhasználónevet és jelszót!', 'warning');
-      return;
-    }
-
-    const { data: users, error } = await supabase
-      .from('app_users')
-      .select('*')
-      .eq('username', username);
-
-    if (error || !users || users.length === 0) {
-      showLoginMessage('Hibás felhasználónév vagy jelszó!', 'error');
-      return;
-    }
-
-    const user = users[0];
-    
-    if (user.password_hash === btoa(password)) {
-      currentUser = { 
-        username: user.username, 
-        role: user.role,
-        tagName: user.member_name,
-        rank: user.rank 
-      };
-      
-      document.getElementById('adminFunctions').style.display = 'block';
-      document.getElementById('tagAdminFunctions').style.display = 'block';
-      document.getElementById('kivantHeader').style.display = 'table-cell';
-      document.getElementById('actionHeader').style.display = 'table-cell';
-      document.getElementById('tagActionHeader').style.display = 'table-cell';
-      
-      document.querySelectorAll('.login-btn').forEach(btn => {
-        btn.innerHTML = '🚪 Kijelentkezés (' + user.member_name + ')';
-        btn.onclick = logout;
-      });
-      
-      document.body.classList.add('logged-in');
-      
-      showPage('autok');
-      showMessage('Sikeres bejelentkezés!', 'success');
-    } else {
-      showLoginMessage('Hibás jelszó!', 'error');
-    }
-  } catch (error) {
-    console.error('Login hiba:', error);
-    showLoginMessage('Hiba történt a bejelentkezés során', 'error');
-  }
-}
-
-function logout() {
-  try {
-    currentUser = null;
-    document.getElementById('adminFunctions').style.display = 'none';
-    document.getElementById('tagAdminFunctions').style.display = 'none';
-    document.getElementById('kivantHeader').style.display = 'none';
-    document.getElementById('actionHeader').style.display = 'none';
-    document.getElementById('tagActionHeader').style.display = 'none';
-    document.querySelectorAll('.login-btn').forEach(btn => {
-      btn.innerHTML = '🔐 Bejelentkezés';
-      btn.onclick = () => showPage('login');
-    });
-    
-    document.body.classList.remove('logged-in');
-    
-    showPage('autok');
-    showMessage('Sikeres kijelentkezés!', 'success');
-  } catch (error) {
-    console.error('Logout hiba:', error);
-  }
 }
 
 // ===== ADATBETÖLTÉS =====
@@ -314,11 +490,19 @@ function renderTuningOptions(options) {
       container.textContent = 'Nincs tuning opció.';
       return;
     }
+    
     options.forEach(optText => {
       const div = document.createElement('div');
-      div.className = 'tuning-option';
+      div.className = 'modern-tuning-option';
       div.textContent = escapeHtml(optText);
-      div.onclick = () => div.classList.toggle('selected');
+      div.onclick = () => {
+        div.classList.toggle('selected');
+        if (div.classList.contains('selected')) {
+          div.style.transform = 'translateY(-2px) scale(1.05)';
+        } else {
+          div.style.transform = 'translateY(0) scale(1)';
+        }
+      };
       container.appendChild(div);
     });
   } catch (error) {
@@ -410,7 +594,6 @@ async function loadTags() {
 
     if (error) throw error;
     
-    // Rang hierarchia definiálása
     const rankHierarchy = {
       'Owner': 1,
       'Co-Owner': 2,
@@ -425,7 +608,6 @@ async function loadTags() {
       'Member': 11
     };
 
-    // Tagok rendezése: először rang szerint, majd név szerint
     const sortedTags = (data || []).sort((a, b) => {
       const rankOrderA = rankHierarchy[a.rank] || 99;
       const rankOrderB = rankHierarchy[b.rank] || 99;
@@ -493,113 +675,192 @@ function loadStats() {
 
 // ===== MEGJELENÍTÉS =====
 function renderCars(cars) {
-  try {
-    const tbody = document.getElementById('carTableBody');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    if (!cars || cars.length === 0) {
-      const colCount = currentUser ? 9 : 6;
-      tbody.innerHTML = `<tr><td colspan="${colCount}">Nincs adat</td></tr>`;
-      return;
-    }
-    
-    cars.forEach(c => {
-      const row = document.createElement('tr');
-      
-      const vetelAr = c.VetelArFormatted || c.VetelAr || '';
-      const kivantAr = c.KivantArFormatted || c.KivantAr || '';
-      const eladasiAr = c.EladasiArFormatted || c.EladasiAr || '';
-      
-      let imageHtml = '';
-      let imageUrl = '';
-
-      if (c.image_url && c.image_url.trim() !== '') {
-        imageUrl = getImageUrl(c.image_url);
-      } else if (c.image_data_url && c.image_data_url.trim() !== '') {
-        imageUrl = c.image_data_url;
-      }
-
-      if (imageUrl) {
-        imageHtml = `
-          <td>
-            <img src="${imageUrl}" 
-                 class="car-image" 
-                 onclick="showImageModal('${imageUrl}')"
-                 alt="${escapeHtml(c.Model || '')}"
-                 onerror="this.onerror=null; this.src=''; this.parentNode.innerHTML='<div class=\\'no-image\\'>Hiba<br>kép</div>'">
-          </td>
-        `;
-      } else {
-        imageHtml = `<td><div class="no-image">Nincs<br>kép</div></td>`;
-      }
-      
-      let rowHtml = `
-        ${imageHtml}
-        <td>${escapeHtml(c.Model || '')}</td>
-        <td>${escapeHtml(c.Tuning || '')}</td>
-      `;
-      
-      if (currentUser) {
-        rowHtml += `<td>${vetelAr ? escapeHtml(vetelAr) + ' $' : ''}</td>`;
-      } else {
-        rowHtml += `<td class="hidden-price">*****</td>`;
-      }
-      
-      if (currentUser) {
-        rowHtml += `<td class="kivant-ar">${kivantAr ? escapeHtml(kivantAr) + ' $' : ''}</td>`;
-      }
-      
-      rowHtml += `
-        <td>${eladasiAr ? escapeHtml(eladasiAr) + ' $' : ''}</td>
-        <td>${escapeHtml(c.Hozzáadta || '')}</td>
-      `;
-      
-      // STÁTUSZ CELL - JAVÍTOTT: bárki eladhatja + megjelenik ki adta el
-      if (currentUser) {
-     const statusCell = c.Eladva ? 
-      `<td>
-        <span style="color: green; font-weight: bold;">✅ ELADVA</span>
-        ${c.sold_by ? `<br><small class="sold-by-info">Eladta: ${escapeHtml(c.sold_by)}</small>` : ''}
-        ${c.sold_at ? `<br><small class="sold-by-info">${new Date(c.sold_at).toLocaleDateString('hu-HU')}</small>` : ''}
-      </td>` :
-      `<td>
-        <span style="color: orange; font-weight: bold;">💰 ELADÓ</span>
-        ${currentUser ? `<br><button class="btn-sold" onclick="markAsSold(${c.id})" style="margin-top: 5px;">Eladva</button>` : ''}
-      </td>`;
-    rowHtml += statusCell;
-} else {
-  // NEM BEJELENTKEZETT - csak a státusz szöveg, nincs gomb
-  const statusCell = c.Eladva ? 
-    `<td><span style="color: green; font-weight: bold;">✅ ELADVA</span></td>` :
-    `<td><span style="color: orange; font-weight: bold;">💰 ELADÓ</span></td>`;
-  rowHtml += statusCell;
-}
-      
-      if (currentUser) {
-        const canDelete = (c.Hozzáadta === currentUser.tagName || currentUser.role === 'admin');
+    try {
+        const tbody = document.getElementById('carTableBody');
+        if (!tbody) return;
         
-        let buttonsHtml = '';
+        tbody.innerHTML = '';
         
-        if (canDelete) {
-          buttonsHtml += `<button class="btn-del" onclick="deleteCar(${c.id})">❌</button>`;
+        if (!cars || cars.length === 0) {
+            const colCount = currentUser ? 9 : 7;
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="${colCount}" class="empty-table-message">
+                        Nincs megjeleníthető autó<br>
+                        <small style="opacity: 0.7;">Adj hozzá egy új autót a fenti űrlappal!</small>
+                    </td>
+                </tr>
+            `;
+            return;
         }
         
-        rowHtml += `<td>${buttonsHtml}</td>`;
-      }
-      
-      if (c.Eladva) {
-        row.classList.add('sold-car');
-      }
-      
-      row.innerHTML = rowHtml;
-      tbody.appendChild(row);
-    });
-  } catch (error) {
-    console.error('renderCars hiba:', error);
-    showMessage('Hiba történt az autók megjelenítésekor', 'error');
-  }
+        cars.forEach(c => {
+            const row = document.createElement('tr');
+            if (c.Eladva) {
+                row.classList.add('sold-row');
+            }
+            
+            // KÉP RÉSZ
+            let imageHtml = '';
+            let imageUrl = '';
+
+            if (c.image_url && c.image_url.trim() !== '') {
+                imageUrl = getImageUrl(c.image_url);
+            } else if (c.image_data_url && c.image_data_url.trim() !== '') {
+                imageUrl = c.image_data_url;
+            }
+
+            if (imageUrl && !imageUrl.includes('undefined') && imageUrl !== '') {
+                imageHtml = `
+                    <td class="image-cell">
+                        <img src="${imageUrl}" 
+                             class="modern-car-image" 
+                             onclick="showImageModal('${imageUrl.replace(/'/g, "\\'")}')"
+                             alt="${escapeHtml(c.Model || '')}">
+                    </td>
+                `;
+            } else {
+                imageHtml = `
+                    <td class="image-cell">
+                        <div class="no-image-placeholder">
+                            👁️<br>Nincs
+                        </div>
+                    </td>
+                `;
+            }
+            
+            // ÁRAK - Vételár a tuning és kívánt ár között
+            const vetelAr = c.VetelArFormatted || '';
+            const kivantAr = c.KivantArFormatted || '';
+            const eladasiAr = c.EladasiArFormatted || '';
+            
+            let vetelArCell = '';
+            let kivantArCell = '';
+            
+            if (currentUser) {
+                // BEJELENTKEZVE: vételár a tuning után, kívánt ár előtt
+                vetelArCell = `<td class="price-cell price-purchase">${vetelAr ? vetelAr + ' $' : '-'}</td>`;
+                kivantArCell = `<td class="price-cell price-desired">${kivantAr ? kivantAr + ' $' : '-'}</td>`;
+            } else {
+                // NEM BEJELENTKEZVE: vételár és kívánt ár elrejtve
+                vetelArCell = '';
+                kivantArCell = '';
+            }
+            
+            // STÁTUSZ
+            let statusCell = '';
+            if (c.Eladva) {
+                statusCell = `
+                    <td>
+                        <span class="status-badge status-sold">✅ ELADVA</span>
+                        ${c.sold_by ? `<br><small style="color: #718096; font-size: 0.8em;">Eladta: ${escapeHtml(c.sold_by)}</small>` : ''}
+                        ${c.sold_at ? `<br><small style="color: #718096; font-size: 0.8em;">${new Date(c.sold_at).toLocaleDateString('hu-HU')}</small>` : ''}
+                    </td>
+                `;
+            } else {
+                statusCell = `
+                    <td>
+                        <span class="status-badge status-available">💰 ELADÓ</span>
+                    </td>
+                `;
+            }
+            
+            // MŰVELET GOMBOK
+            let actionCell = '';
+            if (currentUser) {
+                const canDelete = (c.Hozzáadta === currentUser.tagName || currentUser.role === 'admin');
+                
+                let buttonsHtml = '';
+                
+                if (!c.Eladva) {
+                    buttonsHtml += `<button class="modern-btn-sold" onclick="openSoldModal(${c.id})">Eladva</button>`;
+                }
+                
+                if (canDelete) {
+                    buttonsHtml += `<button class="modern-btn-delete" onclick="deleteCar(${c.id})">❌ Törlés</button>`;
+                }
+                
+                actionCell = `
+                    <td class="action-cell">
+                        <div class="modern-action-buttons">
+                            ${buttonsHtml}
+                        </div>
+                    </td>
+                `;
+            } else {
+                actionCell = '';
+            }
+            
+            // Hozzáadta oszlop - NÉV + TELEFONSZÁM
+            let hozzaadtaCell = '';
+            if (c.Hozzáadta) {
+                // Telefonszám keresése a tagOptions-ból
+                const eladoTag = tagOptions.find(tag => tag.name === c.Hozzáadta);
+                const telefonszam = eladoTag?.phone || '';
+                
+                if (telefonszam) {
+                    hozzaadtaCell = `
+                        <td style="color: #4a5568;">
+                            <div style="font-weight: 600;">${escapeHtml(c.Hozzáadta)}</div>
+                            <div style="color: #4299e1; font-size: 0.85em; font-family: monospace; margin-top: 4px;">
+                                📞 ${escapeHtml(telefonszam)}
+                            </div>
+                        </td>
+                    `;
+                } else {
+                    hozzaadtaCell = `
+                        <td style="color: #4a5568;">
+                            <div style="font-weight: 600;">${escapeHtml(c.Hozzáadta)}</div>
+                            <div style="color: #a0aec0; font-size: 0.8em; font-style: italic; margin-top: 4px;">
+                                nincs telefonszám
+                            </div>
+                        </td>
+                    `;
+                }
+            } else {
+                hozzaadtaCell = `<td style="color: #4a5568;">-</td>`;
+            }
+            
+            // SOR ÖSSZEÁLLÍTÁSA - VÉTELÁR A TUNING ÉS KÍVÁNT ÁR KÖZÖTT
+            if (currentUser) {
+                // BEJELENTKEZVE: minden oszlop megjelenik
+                row.innerHTML = `
+                    ${imageHtml}
+                    <td style="font-weight: 600; color: #2d3748;">${escapeHtml(c.Model || '')}</td>
+                    <td style="color: #718096; font-size: 0.9em;">${escapeHtml(c.Tuning || '-')}</td>
+                    ${vetelArCell}
+                    ${kivantArCell}
+                    <td class="price-cell price-sale">${eladasiAr ? eladasiAr + ' $' : '-'}</td>
+                    ${hozzaadtaCell}
+                    ${statusCell}
+                    ${actionCell}
+                `;
+            } else {
+                // NEM BEJELENTKEZVE: csak a látható oszlopok
+                row.innerHTML = `
+                    ${imageHtml}
+                    <td style="font-weight: 600; color: #2d3748;">${escapeHtml(c.Model || '')}</td>
+                    <td style="color: #718096; font-size: 0.9em;">${escapeHtml(c.Tuning || '-')}</td>
+                    <td class="price-cell price-sale">${eladasiAr ? eladasiAr + ' $' : '-'}</td>
+                    ${hozzaadtaCell}
+                    ${statusCell}
+                `;
+            }
+            
+            tbody.appendChild(row);
+        });
+    } catch (error) {
+        console.error('renderCars hiba:', error);
+        const tbody = document.getElementById('carTableBody');
+        const colCount = currentUser ? 9 : 7;
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="${colCount}" style="text-align: center; color: #e53e3e; padding: 20px;">
+                    ❌ Hiba történt az autók betöltése során
+                </td>
+            </tr>
+        `;
+    }
 }
 
 function renderTags(tags) {
@@ -610,7 +871,7 @@ function renderTags(tags) {
     tbody.innerHTML = '';
     
     if (!tags || tags.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="3">Nincs tag</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" class="empty-table-message">Nincs megjeleníthető tag</td></tr>';
       return;
     }
     
@@ -621,36 +882,36 @@ function renderTags(tags) {
       const rankDisplay = tag.rank ? `${rankIcon} ${escapeHtml(tag.rank)}` : 'Nincs rang';
       
       let actionCell = '';
-      if (currentUser) {
+      if (currentUser && currentUser.role === 'admin') {
+        // CSAK ADMIN LÁTHATJA A MŰVELET GOMBOKAT
         actionCell = `
           <td>
-            <div class="action-buttons">
-              ${currentUser.role === 'admin' ? `
-                <select onchange="updateTagRank('${escapeHtml(tag.name).replace(/'/g, "\\'")}', this.value)" class="rank-select">
-                  <option value="">Válassz rangot</option>
-                  <option value="Owner" ${tag.rank === 'Owner' ? 'selected' : ''}>Owner</option>
-                  <option value="Co-Owner" ${tag.rank === 'Co-Owner' ? 'selected' : ''}>Co-Owner</option>
-                  <option value="Manager" ${tag.rank === 'Manager' ? 'selected' : ''}>Manager</option>
-                  <option value="Team Leader" ${tag.rank === 'Team Leader' ? 'selected' : ''}>Team Leader</option>
-                  <option value="Top Salesman" ${tag.rank === 'Top Salesman' ? 'selected' : ''}>Top Salesman</option>
-                  <option value="Sr. Salesman" ${tag.rank === 'Sr. Salesman' ? 'selected' : ''}>Sr. Salesman</option>
-                  <option value="Jr. Salesman" ${tag.rank === 'Jr. Salesman' ? 'selected' : ''}>Jr. Salesman</option>
-                  <option value="Towing Specialist" ${tag.rank === 'Towing Specialist' ? 'selected' : ''}>Towing Specialist</option>
-                  <option value="Tow Operator" ${tag.rank === 'Tow Operator' ? 'selected' : ''}>Tow Operator</option>
-                  <option value="Truck Driver" ${tag.rank === 'Truck Driver' ? 'selected' : ''}>Truck Driver</option>
-                </select>
-                <button class="btn-del" onclick="deleteTag('${escapeHtml(tag.name).replace(/'/g, "\\'")}')">❌</button>
-              ` : ''}
+            <div class="modern-action-buttons">
+              <select onchange="updateTagRank('${escapeHtml(tag.name).replace(/'/g, "\\'")}', this.value)" class="modern-input" style="padding: 8px; font-size: 0.85em; min-width: 140px;">
+                <option value="">Válassz rangot</option>
+                <option value="Owner" ${tag.rank === 'Owner' ? 'selected' : ''}>Owner</option>
+                <option value="Co-Owner" ${tag.rank === 'Co-Owner' ? 'selected' : ''}>Co-Owner</option>
+                <option value="Manager" ${tag.rank === 'Manager' ? 'selected' : ''}>Manager</option>
+                <option value="Team Leader" ${tag.rank === 'Team Leader' ? 'selected' : ''}>Team Leader</option>
+                <option value="Top Salesman" ${tag.rank === 'Top Salesman' ? 'selected' : ''}>Top Salesman</option>
+                <option value="Sr. Salesman" ${tag.rank === 'Sr. Salesman' ? 'selected' : ''}>Sr. Salesman</option>
+                <option value="Jr. Salesman" ${tag.rank === 'Jr. Salesman' ? 'selected' : ''}>Jr. Salesman</option>
+                <option value="Towing Specialist" ${tag.rank === 'Towing Specialist' ? 'selected' : ''}>Towing Specialist</option>
+                <option value="Tow Operator" ${tag.rank === 'Tow Operator' ? 'selected' : ''}>Tow Operator</option>
+                <option value="Truck Driver" ${tag.rank === 'Truck Driver' ? 'selected' : ''}>Truck Driver</option>
+              </select>
+              <button class="modern-btn-delete" onclick="deleteTag('${escapeHtml(tag.name).replace(/'/g, "\\'")}')">❌ Törlés</button>
             </div>
           </td>
         `;
       } else {
+        // NEM ADMIN VAGY NINCS BEJELENTKEZVE - ÜRES CELL
         actionCell = '<td></td>';
       }
       
       row.innerHTML = `
-        <td>${escapeHtml(tag.name)}</td>
-        <td>${rankDisplay}</td>
+        <td style="font-weight: 600; color: #2d3748;">${escapeHtml(tag.name)}</td>
+        <td style="color: #4a5568;">${rankDisplay}</td>
         ${actionCell}
       `;
       tbody.appendChild(row);
@@ -732,13 +993,13 @@ function renderModelDropdown(models) {
     dropdown.innerHTML = '';
     
     if (models.length === 0) {
-      dropdown.innerHTML = '<div class="model-option">Nincs találat</div>';
+      dropdown.innerHTML = '<div class="model-option modern">Nincs találat</div>';
       return;
     }
     
     models.forEach(model => {
       const option = document.createElement('div');
-      option.className = 'model-option';
+      option.className = 'model-option modern';
       option.textContent = escapeHtml(model);
       option.onclick = () => onModelSelected(model);
       dropdown.appendChild(option);
@@ -757,6 +1018,115 @@ function onModelSelected(model) {
   }
 }
 
+// ===== MODAL FUNKCIÓK =====
+function openSoldModal(carId) {
+  const car = allCars.find(c => c.id === carId);
+  if (!car) return;
+
+  currentCarIdForSale = carId;
+  
+  // Kép beállítása
+  const carImage = document.getElementById('editCarImage');
+  const imageUrl = getImageUrl(car.image_url || car.image_data_url);
+  if (imageUrl && !imageUrl.includes('undefined')) {
+    carImage.src = imageUrl;
+    carImage.style.display = 'block';
+  } else {
+    carImage.style.display = 'none';
+  }
+  
+  // Autó adatok
+  document.getElementById('editCarModel').textContent = car.Model || 'Ismeretlen modell';
+  document.getElementById('editPurchasePrice').textContent = car.VetelArFormatted ? car.VetelArFormatted + ' $' : 'Nincs megadva';
+  document.getElementById('editCurrentPrice').textContent = car.EladasiArFormatted ? car.EladasiArFormatted + ' $' : 'Nincs megadva';
+  
+  // Eladási ár input
+  document.getElementById('editSalePrice').value = car.EladasiArFormatted || '';
+  
+  // Profit számoló frissítése
+  updateProfitCalculator();
+  
+  // Modal megjelenítése
+  document.getElementById('editSaleModal').style.display = 'block';
+  
+  // Input fókusz
+  setTimeout(() => {
+    document.getElementById('editSalePrice').focus();
+  }, 300);
+}
+
+function closeEditModal() {
+  document.getElementById('editSaleModal').style.display = 'none';
+  currentCarIdForSale = null;
+}
+
+// Profit számoló frissítése
+function updateProfitCalculator() {
+  const salePriceInput = document.getElementById('editSalePrice').value.replace(/[^\d]/g, '');
+  const salePrice = salePriceInput ? parseInt(salePriceInput) : 0;
+  
+  const car = allCars.find(c => c.id === currentCarIdForSale);
+  const purchasePrice = car.VetelAr || 0;
+  
+  const profitCalc = document.getElementById('profitCalc');
+  
+  if (salePrice > 0 && purchasePrice > 0) {
+    const profit = salePrice - purchasePrice;
+    const profitFormatted = new Intl.NumberFormat('hu-HU').format(Math.abs(profit));
+    const profitClass = profit >= 0 ? 'profit-positive' : 'profit-negative';
+    
+    document.getElementById('calcPurchase').textContent = new Intl.NumberFormat('hu-HU').format(purchasePrice) + ' $';
+    document.getElementById('calcSale').textContent = new Intl.NumberFormat('hu-HU').format(salePrice) + ' $';
+    document.getElementById('calcProfit').textContent = (profit >= 0 ? '+' : '-') + profitFormatted + ' $';
+    document.getElementById('calcProfit').className = profitClass;
+    
+    profitCalc.style.display = 'block';
+  } else {
+    profitCalc.style.display = 'none';
+  }
+}
+
+async function confirmSaleWithEdit() {
+  if (!currentCarIdForSale || !currentUser) return;
+
+  const salePriceInput = document.getElementById('editSalePrice').value.replace(/[^\d]/g, '');
+  const salePriceValue = salePriceInput ? parseInt(salePriceInput) : null;
+
+  if (salePriceValue !== null && isNaN(salePriceValue)) {
+    showMessage('Érvényes számot adj meg!', 'error');
+    return;
+  }
+
+  const car = allCars.find(c => c.id === currentCarIdForSale);
+  
+  // Vételár ellenőrzése
+  if (salePriceValue !== null && car.VetelAr && salePriceValue < car.VetelAr) {
+    const confirmLoss = confirm(`⚠️ Figyelem! Az eladási ár (${new Intl.NumberFormat('hu-HU').format(salePriceValue)} $) alacsonyabb a vételárnál (${new Intl.NumberFormat('hu-HU').format(car.VetelAr)} $).\n\nBiztosan folytatod?`);
+    if (!confirmLoss) return;
+  }
+
+  const { error } = await supabase
+    .from('cars')
+    .update({ 
+      sold: true,
+      sold_by: currentUser.tagName,
+      sold_at: new Date().toISOString(),
+      sale_price: salePriceValue
+    })
+    .eq('id', currentCarIdForSale);
+
+  if (error) {
+    showMessage('Hiba: ' + error.message, 'error');
+  } else {
+    const priceInfo = salePriceValue ? ` (${new Intl.NumberFormat('hu-HU').format(salePriceValue)} $)` : '';
+    showMessage(`✅ Autó eladva${priceInfo}! (Eladó: ${currentUser.tagName})`, 'success');
+    loadCars();
+    loadStats();
+  }
+
+  closeEditModal();
+}
+
 // ===== MÓDOSÍTÓ FUNKCIÓK =====
 async function addCar() {
   try {
@@ -766,7 +1136,7 @@ async function addCar() {
     }
 
     const selectedModel = document.getElementById('modelSearch').value.trim();
-    const selectedTuning = Array.from(document.querySelectorAll('.tuning-option.selected'))
+    const selectedTuning = Array.from(document.querySelectorAll('.modern-tuning-option.selected'))
       .map(div => div.textContent)
       .join(', ');
 
@@ -779,13 +1149,10 @@ async function addCar() {
     const kivantAr = document.getElementById('kivant').value.replace(/[^\d]/g, '');
     const eladasiAr = document.getElementById('eladas').value.replace(/[^\d]/g, '');
 
-    console.log('🖼 Kép állapot:', selectedImage);
-
-    // KÉP KEZELÉS - CSAK BASE64
+    // KÉP KEZELÉS
     let imageDataUrl = null;
     if (selectedImage && selectedImage.dataUrl) {
       imageDataUrl = selectedImage.dataUrl;
-      console.log('✅ Base64 kép használata, méret:', Math.round(imageDataUrl.length / 1024) + 'KB');
     }
 
     const carData = {
@@ -796,10 +1163,8 @@ async function addCar() {
       sale_price: eladasiAr ? parseInt(eladasiAr) : null,
       added_by: currentUser.tagName,
       sold: false,
-      image_data_url: imageDataUrl  // CSAK BASE64
+      image_data_url: imageDataUrl
     };
-
-    console.log('🚗 Autó adatok küldése:', carData);
 
     const { data, error } = await supabase
       .from('cars')
@@ -824,51 +1189,6 @@ async function addCar() {
   }
 }
 
-async function markAsSold(carId) {
-  try {
-    if (!currentUser) {
-      showMessage('Bejelentkezés szükséges!', 'warning');
-      return;
-    }
-
-    const { data: car, error: carError } = await supabase
-      .from('cars')
-      .select('*')
-      .eq('id', carId)
-      .single();
-
-    if (carError || !car) {
-      showMessage('Autó nem található!', 'error');
-      return;
-    }
-
-    if (car.sold) {
-      showMessage('Ez az autó már eladva!', 'warning');
-      return;
-    }
-
-    // AUTÓ FRISSÍTÉSE - NINCS MEGERŐSÍTŐ ABLAK!
-    const { error } = await supabase
-      .from('cars')
-      .update({ 
-        sold: true,
-        sold_by: currentUser.tagName,
-        sold_at: new Date().toISOString()
-      })
-      .eq('id', carId);
-
-    if (error) {
-      showMessage('Hiba: ' + error.message, 'error');
-    } else {
-      showMessage(`✅ Autó eladva! (Eladó: ${currentUser.tagName})`, 'success');
-      loadCars();
-      loadStats();
-    }
-  } catch (error) {
-    console.error('markAsSold hiba:', error);
-    showMessage('Hiba történt az eladás során', 'error');
-  }
-}
 async function deleteCar(carId) {
   try {
     if (!currentUser) {
@@ -1019,7 +1339,7 @@ function clearInputs() {
     document.getElementById('kivant').value = '';
     document.getElementById('eladas').value = '';
     document.getElementById('newTag').value = '';
-    document.querySelectorAll('.tuning-option').forEach(div => div.classList.remove('selected'));
+    document.querySelectorAll('.modern-tuning-option').forEach(div => div.classList.remove('selected'));
     document.getElementById('modelDropdown').style.display = 'none';
     clearImage();
   } catch (error) {
@@ -1027,7 +1347,87 @@ function clearInputs() {
   }
 }
 
-// Kattintás a dropdown-on kívül
+// ===== MODERN LOGIN FUNKCIÓK =====
+
+// Enter billentyű kezelése
+function setupEnterKeyListener() {
+  const loginForm = document.getElementById('loginForm');
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+  
+  if (loginForm) {
+    // Form submit esemény
+    loginForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      handleLogin();
+    });
+    
+    // Input mezők Enter eseménye
+    [usernameInput, passwordInput].forEach(input => {
+      if (input) {
+        input.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleLogin();
+          }
+        });
+      }
+    });
+  }
+}
+
+// Modern login handler
+async function handleLogin() {
+  const loginButton = document.getElementById('loginButton');
+  const originalText = loginButton.innerHTML;
+  
+  try {
+    // Loading állapot
+    loginButton.innerHTML = '⏳ Bejelentkezés...';
+    loginButton.classList.add('loading');
+    loginButton.disabled = true;
+    
+    await login();
+    
+  } catch (error) {
+    console.error('Login hiba:', error);
+  } finally {
+    // Visszaállítás
+    loginButton.innerHTML = originalText;
+    loginButton.classList.remove('loading');
+    loginButton.disabled = false;
+  }
+}
+
+// ===== OLDAL BETÖLTÉSE =====
+window.onload = async () => {
+    try {
+        console.log('🔄 Oldal betöltése...');
+        
+        // ELŐSZÖR: Próbáljuk meg betölteni a mentett bejelentkezést
+        const savedUser = loadLoginState();
+        if (savedUser) {
+            console.log('✅ Automatikus bejelentkezés:', savedUser.tagName);
+            currentUser = savedUser;
+            
+            // UI frissítése
+            updateUIForLoginState();
+        } else {
+            console.log('ℹ️ Nincs mentett bejelentkezés');
+            updateUIForLoginState();
+        }
+        
+        // Adatok betöltése
+        await loadAllData();
+        showPage('autok');
+        
+    } catch (error) {
+        console.error('❌ Window load hiba:', error);
+        showMessage('Hiba történt az oldal betöltésekor', 'error');
+    }
+};
+
+// Event listener-ek
 document.addEventListener('click', function(event) {
   try {
     const modelDropdown = document.getElementById('modelDropdown');
@@ -1041,23 +1441,235 @@ document.addEventListener('click', function(event) {
   }
 });
 
-// ===== OLDAL BETÖLTÉSE =====
-window.onload = async () => {
-  try {
-    await loadAllData();
-    showPage('autok');
-  } catch (error) {
-    console.error('Window load hiba:', error);
-    showMessage('Hiba történt az oldal betöltésekor', 'error');
+// Profit számoló event listener
+document.addEventListener('DOMContentLoaded', function() {
+  const salePriceInput = document.getElementById('editSalePrice');
+  if (salePriceInput) {
+    salePriceInput.addEventListener('input', function() {
+      formatInputPrice(this);
+      updateProfitCalculator();
+    });
   }
-};
+});
+
+// Modal bezárása kattintásra
+document.addEventListener('click', function(event) {
+  const modal = document.getElementById('editSaleModal');
+  if (event.target === modal) {
+    closeEditModal();
+  }
+});
 
 // Global error handler
 window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+// === FRISSÍTÉS FUNKCIÓ ===
+async function refreshAllData() {
+    try {
+        console.log('🔄 Összes adat frissítése...');
+        
+        // Loading állapot
+        const refreshBtn = document.querySelector('.modern-btn-refresh');
+        const originalText = refreshBtn.innerHTML;
+        refreshBtn.innerHTML = '⏳ Frissítés...';
+        refreshBtn.disabled = true;
+        
+        // Összes adat újratöltése
+        await loadAllData();
+        
+        // Statisztika frissítése (ha a statisztika oldalon van)
+        if (document.getElementById('statisztikaPage').classList.contains('active')) {
+            loadStats();
+        }
+        
+        // Visszaállítás
+        refreshBtn.innerHTML = originalText;
+        refreshBtn.disabled = false;
+        
+        showMessage('✅ Összes adat frissítve!', 'success');
+        console.log('✅ Frissítés kész');
+        
+    } catch (error) {
+        console.error('❌ Frissítés hiba:', error);
+        showMessage('❌ Hiba történt a frissítés során', 'error');
+        
+        // Hiba esetén is visszaállítás
+        const refreshBtn = document.querySelector('.modern-btn-refresh');
+        if (refreshBtn) {
+            refreshBtn.innerHTML = '🔄 Összes adat frissítése';
+            refreshBtn.disabled = false;
+        }
+    }
+}
+// === SZŰRÉSI FUNKCIÓK ===
+let currentFilters = {
+    user: '',
+    status: ''
+};
 
+function loadUserFilter() {
+    const userFilter = document.getElementById('filterByUser');
+    if (!userFilter) return;
+    
+    const uniqueUsers = [...new Set(allCars.map(car => car.Hozzáadta).filter(Boolean))];
+    userFilter.innerHTML = '<option value="">Összes</option>';
+    
+    uniqueUsers.sort().forEach(user => {
+        const option = document.createElement('option');
+        option.value = user;
+        option.textContent = user;
+        userFilter.appendChild(option);
+    });
+}
 
+function filterCars() {
+    const userFilter = document.getElementById('filterByUser');
+    const statusFilter = document.getElementById('filterByStatus');
+    
+    currentFilters.user = userFilter.value;
+    currentFilters.status = statusFilter.value;
+    applyFilters();
+}
 
+function applyFilters() {
+    let filteredCars = [...allCars];
+    
+    if (currentFilters.user) {
+        filteredCars = filteredCars.filter(car => car.Hozzáadta === currentFilters.user);
+    }
+    
+    if (currentFilters.status) {
+        if (currentFilters.status === 'available') {
+            filteredCars = filteredCars.filter(car => !car.Eladva);
+        } else if (currentFilters.status === 'sold') {
+            filteredCars = filteredCars.filter(car => car.Eladva);
+        }
+    }
+    
+    renderCars(filteredCars);
+    updateFilterInfo();
+}
 
+// Szűrő információk frissítése
+function updateFilterInfo() {
+    const filterInfo = document.getElementById('filterInfo');
+    if (!filterInfo) return;
+    
+    const activeFilters = Object.values(currentFilters).filter(Boolean);
+    
+    if (activeFilters.length === 0) {
+        filterInfo.style.display = 'none';
+        return;
+    }
+    
+    let filterText = '';
+    const filterParts = [];
+    
+    if (currentFilters.user) {
+        filterParts.push(`Felhasználó: ${currentFilters.user}`);
+    }
+    if (currentFilters.status) {
+        const statusText = currentFilters.status === 'available' ? 'Eladó' : 'Eladva';
+        filterParts.push(`Státusz: ${statusText}`);
+    }
+    
+    const displayedCars = document.getElementById('carTableBody').children.length;
+    const totalCars = allCars.length;
+    
+    filterInfo.innerHTML = `
+        <h4>🔍 Aktív szűrők</h4>
+        <p>${filterParts.join(' • ')}</p>
+        <p><small>Megjelenítve: ${displayedCars} / ${totalCars} autó</small></p>
+    `;
+    filterInfo.style.display = 'block';
+}
+
+// Szűrők törlése
+function clearFilters() {
+    currentFilters = {
+        user: '',
+        status: ''
+    };
+    
+    document.getElementById('filterByUser').value = '';
+    document.getElementById('filterByStatus').value = '';
+    
+    renderCars(allCars);
+    const filterInfo = document.getElementById('filterInfo');
+    if (filterInfo) filterInfo.style.display = 'none';
+    
+    showMessage('✅ Szűrők törölve', 'success');
+}
+
+// Szűrő dropdown frissítése
+function updateFilterModelDropdown() {
+  const dropdown = document.getElementById('filterModelDropdown');
+  if (!dropdown) return;
+  
+  renderFilterModelDropdown(modelOptions);
+}
+
+// Automatikus kiegészítés a szűrőhöz
+function showFilterModelDropdown() {
+  const dropdown = document.getElementById('filterModelDropdown');
+  const searchValue = document.getElementById('filterByModel').value.toLowerCase();
+  
+  if (searchValue === '') {
+    renderFilterModelDropdown(modelOptions.slice(0, 10)); // Csak első 10 modell
+  } else {
+    const filteredModels = modelOptions.filter(model => 
+      model.toLowerCase().includes(searchValue)
+    ).slice(0, 10); // Maximum 10 találat
+    renderFilterModelDropdown(filteredModels);
+  }
+  
+  dropdown.style.display = 'block';
+}
+
+// Autók betöltése után frissítsd a szűrőt
+async function loadCars() {
+    try {
+        const { data, error } = await supabase
+            .from('cars')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        allCars = data || [];
+        
+        allCars = allCars.map(car => ({
+            ...car,
+            VetelArFormatted: car.purchase_price ? new Intl.NumberFormat('hu-HU').format(car.purchase_price) : '',
+            KivantArFormatted: car.desired_price ? new Intl.NumberFormat('hu-HU').format(car.desired_price) : '',
+            EladasiArFormatted: car.sale_price ? new Intl.NumberFormat('hu-HU').format(car.sale_price) : '',
+            Model: car.model,
+            Tuning: car.tuning,
+            VetelAr: car.purchase_price,
+            KivantAr: car.desired_price,
+            EladasiAr: car.sale_price,
+            Eladva: car.sold,
+            Hozzáadta: car.added_by,
+            KepURL: getImageUrl(car.image_url),
+            sold_by: car.sold_by,
+            sold_at: car.sold_at
+        }));
+        
+        renderCars(allCars);
+        loadUserFilter(); // Szűrő frissítése
+        updateFilterInfo();
+    } catch (error) {
+        console.error('Cars load error:', error);
+        showMessage('Hiba történt az autók betöltésekor', 'error');
+    }
+}
+
+// Gyorsbillentyű hozzáadása (F5) - mindig működik
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'F5') {
+        e.preventDefault();
+        refreshAllData();
+    }
+});
