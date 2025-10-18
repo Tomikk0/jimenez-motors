@@ -34,11 +34,11 @@ function handleImageSelect(event) {
     preview.innerHTML = `<img src="${e.target.result}" alt="Előnézet">`;
     
     selectedImage = {
-      data: e.target.result.split(',')[1],
-      name: file.name,
-      type: file.name.split('.').pop(),
-      mimeType: file.type
+      dataUrl: e.target.result,
+      name: file.name
     };
+    
+    console.log('📷 Kép betöltve, méret:', Math.round(e.target.result.length / 1024) + 'KB');
   };
   reader.readAsDataURL(file);
 }
@@ -70,11 +70,7 @@ function showImageModal(imageUrl) {
 
 function getImageUrl(imagePath) {
   if (!imagePath) return '';
-  
-  // Ha már teljes URL, használjuk azt
   if (imagePath.startsWith('http')) return imagePath;
-  
-  // Supabase storage URL összeállítása
   return `${supabaseUrl}/storage/v1/object/public/car-images/${imagePath}`;
 }
 
@@ -273,7 +269,6 @@ async function loadAllData() {
 
 async function loadTuningOptions() {
   try {
-    // Tuning opciók betöltése az adatbázisból
     const { data, error } = await supabase
       .from('tuning_options')
       .select('name')
@@ -281,11 +276,9 @@ async function loadTuningOptions() {
 
     if (error) throw error;
     
-    // Ha vannak tuning opciók az adatbázisban, használjuk azokat
     if (data && data.length > 0) {
       tuningOptions = data.map(item => item.name);
     } else {
-      // Ha nincsenek, használjuk a hardcode-olt listát
       tuningOptions = [
         'Motor 1', 'Motor 2', 'Motor 3',
         'Chip 1', 'Chip 2', 'Chip 3',
@@ -300,7 +293,6 @@ async function loadTuningOptions() {
     renderTuningOptions(tuningOptions);
   } catch (error) {
     console.error('Tuning options load error:', error);
-    // Fallback lista
     tuningOptions = [
       'Motor 1', 'Motor 2', 'Motor 3',
       'Chip 1', 'Chip 2', 'Chip 3',
@@ -338,20 +330,16 @@ function renderTuningOptions(options) {
 
 async function loadModelOptions() {
   try {
-    // Modellek betöltése az adatbázisból
     const { data, error } = await supabase
       .from('car_models')
-      .select('name, brand')
-      .order('brand')
+      .select('name')
       .order('name');
 
     if (error) throw error;
     
-    // Ha vannak modellek az adatbázisban, használjuk azokat
     if (data && data.length > 0) {
       modelOptions = data.map(item => item.name);
     } else {
-      // Ha nincsenek, használjuk a hardcode-olt listát
       modelOptions = [
         'BMW M3', 'BMW M4', 'BMW M5', 'Mercedes C63 AMG', 'Mercedes E63 AMG',
         'Audi RS6', 'Audi RS7', 'Audi RS5', 'Porsche 911', 'Lamborghini Huracan'
@@ -359,7 +347,6 @@ async function loadModelOptions() {
     }
   } catch (error) {
     console.error('Model options load error:', error);
-    // Fallback lista
     modelOptions = [
       'BMW M3', 'BMW M4', 'BMW M5', 'Mercedes C63 AMG', 'Mercedes E63 AMG',
       'Audi RS6', 'Audi RS7', 'Audi RS5', 'Porsche 911', 'Lamborghini Huracan'
@@ -405,7 +392,9 @@ async function loadCars() {
       EladasiAr: car.sale_price,
       Eladva: car.sold,
       Hozzáadta: car.added_by,
-      KepURL: getImageUrl(car.image_url)
+      KepURL: getImageUrl(car.image_url),
+      sold_by: car.sold_by,
+      sold_at: car.sold_at
     }));
     
     renderCars(allCars);
@@ -423,7 +412,7 @@ async function loadTags() {
 
     if (error) throw error;
     
-    // Rang hierarchia definiálása - itt állíthatod a sorrendet
+    // Rang hierarchia definiálása
     const rankHierarchy = {
       'Owner': 1,
       'Co-Owner': 2,
@@ -436,7 +425,6 @@ async function loadTags() {
       'Tow Operator': 9,
       'Truck Driver': 10,
       'Member': 11
-      // Új rangokat ide lehet hozzáadni
     };
 
     // Tagok rendezése: először rang szerint, majd név szerint
@@ -444,12 +432,10 @@ async function loadTags() {
       const rankOrderA = rankHierarchy[a.rank] || 99;
       const rankOrderB = rankHierarchy[b.rank] || 99;
       
-      // Először rang szerint rendezés
       if (rankOrderA !== rankOrderB) {
         return rankOrderA - rankOrderB;
       }
       
-      // Ha egyforma a rang, név szerint rendezés
       return a.name.localeCompare(b.name);
     }).map(tag => ({
       name: tag.name,
@@ -528,31 +514,28 @@ function renderCars(cars) {
       const kivantAr = c.KivantArFormatted || c.KivantAr || '';
       const eladasiAr = c.EladasiArFormatted || c.EladasiAr || '';
       
-let imageHtml = '';
-let imageUrl = '';
+      let imageHtml = '';
+      let imageUrl = '';
 
-// Először próbáljuk a Supabase storage-t
-if (c.image_url && c.image_url.trim() !== '') {
-  imageUrl = getImageUrl(c.image_url);
-} 
-// Ha nincs storage kép, próbáljuk a base64-t
-else if (c.image_data_url && c.image_data_url.trim() !== '') {
-  imageUrl = c.image_data_url;
-}
+      if (c.image_url && c.image_url.trim() !== '') {
+        imageUrl = getImageUrl(c.image_url);
+      } else if (c.image_data_url && c.image_data_url.trim() !== '') {
+        imageUrl = c.image_data_url;
+      }
 
-if (imageUrl) {
-  imageHtml = `
-    <td>
-      <img src="${imageUrl}" 
-           class="car-image" 
-           onclick="showImageModal('${imageUrl}')"
-           alt="${escapeHtml(c.Model || '')}"
-           onerror="this.onerror=null; this.src=''; this.parentNode.innerHTML='<div class=\\'no-image\\'>Hiba<br>kép</div>'">
-    </td>
-  `;
-} else {
-  imageHtml = `<td><div class="no-image">Nincs<br>kép</div></td>`;
-}
+      if (imageUrl) {
+        imageHtml = `
+          <td>
+            <img src="${imageUrl}" 
+                 class="car-image" 
+                 onclick="showImageModal('${imageUrl}')"
+                 alt="${escapeHtml(c.Model || '')}"
+                 onerror="this.onerror=null; this.src=''; this.parentNode.innerHTML='<div class=\\'no-image\\'>Hiba<br>kép</div>'">
+          </td>
+        `;
+      } else {
+        imageHtml = `<td><div class="no-image">Nincs<br>kép</div></td>`;
+      }
       
       let rowHtml = `
         ${imageHtml}
@@ -575,31 +558,35 @@ if (imageUrl) {
         <td>${escapeHtml(c.Hozzáadta || '')}</td>
       `;
       
+      // STÁTUSZ CELL - JAVÍTOTT: bárki eladhatja + megjelenik ki adta el
       if (currentUser) {
         const statusCell = c.Eladva ? 
-  `<td>
-    <span style="color: green; font-weight: bold;">✅ ELADVA</span>
-    <br>
-    <small style="color: #666; font-size: 11px;">Eladta: ${escapeHtml(c.sold_by || 'Ismeretlen')}</small>
-    ${c.sold_at ? `<br><small style="color: #666; font-size: 11px;">${new Date(c.sold_at).toLocaleDateString('hu-HU')}</small>` : ''}
-  </td>` :
-  `<td>
-    <span style="color: orange; font-weight: bold;">💰 ELADÓ</span>
-    ${currentUser ? `<br><button class="btn-sold" onclick="markAsSold(${c.id})" style="margin-top: 5px; font-size: 11px; padding: 3px 8px;">Eladva</button>` : ''}
-  </td>`;
+          `<td>
+            <span style="color: green; font-weight: bold;">✅ ELADVA</span>
+            <br>
+            <small style="color: #666; font-size: 11px;">Eladta: ${escapeHtml(c.sold_by || 'Ismeretlen')}</small>
+            ${c.sold_at ? `<br><small style="color: #666; font-size: 11px;">${new Date(c.sold_at).toLocaleDateString('hu-HU')}</small>` : ''}
+          </td>` :
+          `<td>
+            <span style="color: orange; font-weight: bold;">💰 ELADÓ</span>
+            <br>
+            <button class="btn-sold" onclick="markAsSold(${c.id})" style="margin-top: 5px;">Eladva</button>
+          </td>`;
+        rowHtml += statusCell;
+      } else {
+        const statusCell = c.Eladva ? 
+          `<td><span style="color: green; font-weight: bold;">✅ ELADVA</span></td>` :
+          `<td><span style="color: orange; font-weight: bold;">💰 ELADÓ</span></td>`;
+        rowHtml += statusCell;
+      }
       
       if (currentUser) {
         const canDelete = (c.Hozzáadta === currentUser.tagName || currentUser.role === 'admin');
-        const canMarkSold = (c.Hozzáadta === currentUser.tagName || currentUser.role === 'admin');
         
         let buttonsHtml = '';
         
         if (canDelete) {
-          buttonsHtml += `<button class="btn-del" onclick="deleteCar(${c.id})">❌</button> `;
-        }
-        
-        if (!c.Eladva && canMarkSold) {
-          buttonsHtml += `<button class="btn-sold" onclick="markAsSold(${c.id})">💰</button>`;
+          buttonsHtml += `<button class="btn-del" onclick="deleteCar(${c.id})">❌</button>`;
         }
         
         rowHtml += `<td>${buttonsHtml}</td>`;
@@ -795,32 +782,13 @@ async function addCar() {
     const kivantAr = document.getElementById('kivant').value.replace(/[^\d]/g, '');
     const eladasiAr = document.getElementById('eladas').value.replace(/[^\d]/g, '');
 
-    // KÉP KEZELÉS - BASE64 VAGY SUPABASE STORAGE
-    let imagePath = null;
-    let imageDataUrl = null;
+    console.log('🖼 Kép állapot:', selectedImage);
 
-    if (selectedImage) {
-      // 1. PRÓBÁLJUK A SUPABASE STORAGE-T
-      try {
-        const fileName = `cars/${Date.now()}-${selectedImage.name}`;
-        const blob = base64ToBlob(selectedImage.data, selectedImage.mimeType);
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('car-images')
-          .upload(fileName, blob);
-        
-        if (!uploadError) {
-          imagePath = uploadData.path;
-          console.log('✅ Kép feltöltve Supabase storage-ba:', imagePath);
-        } else {
-          console.warn('⚠️ Supabase storage hiba, base64-t használunk:', uploadError.message);
-          // 2. FALLBACK: BASE64
-          imageDataUrl = selectedImage.dataUrl;
-        }
-      } catch (storageError) {
-        console.warn('⚠️ Storage hiba, base64 fallback:', storageError);
-        imageDataUrl = selectedImage.dataUrl;
-      }
+    // KÉP KEZELÉS - CSAK BASE64
+    let imageDataUrl = null;
+    if (selectedImage && selectedImage.dataUrl) {
+      imageDataUrl = selectedImage.dataUrl;
+      console.log('✅ Base64 kép használata, méret:', Math.round(imageDataUrl.length / 1024) + 'KB');
     }
 
     const carData = {
@@ -831,11 +799,10 @@ async function addCar() {
       sale_price: eladasiAr ? parseInt(eladasiAr) : null,
       added_by: currentUser.tagName,
       sold: false,
-      image_url: imagePath,        // Supabase storage útvonal
-      image_data_url: imageDataUrl // Base64 kép adat
+      image_data_url: imageDataUrl  // CSAK BASE64
     };
 
-    console.log('🚗 Autó adatok:', carData);
+    console.log('🚗 Autó adatok küldése:', carData);
 
     const { data, error } = await supabase
       .from('cars')
@@ -859,6 +826,7 @@ async function addCar() {
     showMessage('Hiba történt az autó hozzáadása során', 'error');
   }
 }
+
 async function markAsSold(carId) {
   try {
     if (!currentUser) {
@@ -877,7 +845,6 @@ async function markAsSold(carId) {
       return;
     }
 
-    // MEGERŐSÍTÉS - csak ha még nincs eladva
     if (car.sold) {
       showMessage('Ez az autó már eladva!', 'warning');
       return;
@@ -1101,15 +1068,3 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
-
-
-
-
-
-
-
-
-
-
-
-
