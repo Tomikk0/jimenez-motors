@@ -209,7 +209,6 @@ async function login() {
       document.getElementById('adminFunctions').style.display = 'block';
       document.getElementById('tagAdminFunctions').style.display = 'block';
       document.getElementById('kivantHeader').style.display = 'table-cell';
-      document.getElementById('statusHeader').style.display = 'table-cell';
       document.getElementById('actionHeader').style.display = 'table-cell';
       document.getElementById('tagActionHeader').style.display = 'table-cell';
       
@@ -237,7 +236,6 @@ function logout() {
     document.getElementById('adminFunctions').style.display = 'none';
     document.getElementById('tagAdminFunctions').style.display = 'none';
     document.getElementById('kivantHeader').style.display = 'none';
-    document.getElementById('statusHeader').style.display = 'none';
     document.getElementById('actionHeader').style.display = 'none';
     document.getElementById('tagActionHeader').style.display = 'none';
     document.querySelectorAll('.login-btn').forEach(btn => {
@@ -1059,6 +1057,7 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
 
 
 
