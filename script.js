@@ -501,19 +501,21 @@ function renderCars(cars) {
       const kivantAr = c.KivantArFormatted || c.KivantAr || '';
       const eladasiAr = c.EladasiArFormatted || c.EladasiAr || '';
       
-      let imageHtml = '';
-      if (c.KepURL && c.KepURL.trim() !== '') {
-        imageHtml = `
-          <td>
-            <img src="${c.KepURL}" 
-                 class="car-image" 
-                 onclick="showImageModal('${c.KepURL}')"
-                 alt="${escapeHtml(c.Model || '')}">
-          </td>
-        `;
-      } else {
-        imageHtml = `<td><div class="no-image">Nincs<br>kép</div></td>`;
-      }
+let imageHtml = '';
+if (c.image_url && c.image_url.trim() !== '') {
+  const imageUrl = getImageUrl(c.image_url);
+  imageHtml = `
+    <td>
+      <img src="${imageUrl}" 
+           class="car-image" 
+           onclick="showImageModal('${imageUrl}')"
+           alt="${escapeHtml(c.Model || '')}"
+           onerror="this.style.display='none'; this.parentNode.innerHTML='<div class=\\'no-image\\'>Hiba<br>kép</div>'">
+    </td>
+  `;
+} else {
+  imageHtml = `<td><div class="no-image">Nincs<br>kép</div></td>`;
+}
       
       let rowHtml = `
         ${imageHtml}
@@ -1037,6 +1039,7 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
 
 
 
