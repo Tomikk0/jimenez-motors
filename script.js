@@ -415,21 +415,48 @@ async function loadCars() {
   }
 }
 
-async function loadTags() {
+aasync function loadTags() {
   try {
     const { data, error } = await supabase
       .from('members')
-      .select('*')
-      .order('name');
-    
+      .select('*');
+
     if (error) throw error;
     
-    const tags = (data || []).map(tag => ({
+    // Rang hierarchia definiálása - itt állíthatod a sorrendet
+    const rankHierarchy = {
+      'Owner': 1,
+      'Co-Owner': 2,
+      'Manager': 3,
+      'Team Leader': 4,
+      'Top Salesman': 5,
+      'Sr. Salesman': 6,
+      'Jr. Salesman': 7,
+      'Towing Specialist': 8,
+      'Tow Operator': 9,
+      'Truck Driver': 10,
+      'Member': 11
+      // Új rangokat ide lehet hozzáadni
+    };
+
+    // Tagok rendezése: először rang szerint, majd név szerint
+    const sortedTags = (data || []).sort((a, b) => {
+      const rankOrderA = rankHierarchy[a.rank] || 99;
+      const rankOrderB = rankHierarchy[b.rank] || 99;
+      
+      // Először rang szerint rendezés
+      if (rankOrderA !== rankOrderB) {
+        return rankOrderA - rankOrderB;
+      }
+      
+      // Ha egyforma a rang, név szerint rendezés
+      return a.name.localeCompare(b.name);
+    }).map(tag => ({
       name: tag.name,
       rank: tag.rank
     }));
     
-    renderTags(tags);
+    renderTags(sortedTags);
   } catch (error) {
     console.error('Tags load error:', error);
     showTagMessage('Hiba történt a tagok betöltésekor', 'error');
@@ -1055,6 +1082,7 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
 
 
 
