@@ -577,10 +577,16 @@ if (imageUrl) {
       
       if (currentUser) {
         const statusCell = c.Eladva ? 
-          `<td><span style="color: green; font-weight: bold;">✅ ELADVA</span></td>` :
-          `<td><span style="color: orange; font-weight: bold;">💰 ELADÓ</span></td>`;
-        rowHtml += statusCell;
-      }
+  `<td>
+    <span style="color: green; font-weight: bold;">✅ ELADVA</span>
+    <br>
+    <small style="color: #666; font-size: 11px;">Eladta: ${escapeHtml(c.sold_by || 'Ismeretlen')}</small>
+    ${c.sold_at ? `<br><small style="color: #666; font-size: 11px;">${new Date(c.sold_at).toLocaleDateString('hu-HU')}</small>` : ''}
+  </td>` :
+  `<td>
+    <span style="color: orange; font-weight: bold;">💰 ELADÓ</span>
+    ${currentUser ? `<br><button class="btn-sold" onclick="markAsSold(${c.id})" style="margin-top: 5px; font-size: 11px; padding: 3px 8px;">Eladva</button>` : ''}
+  </td>`;
       
       if (currentUser) {
         const canDelete = (c.Hozzáadta === currentUser.tagName || currentUser.role === 'admin');
@@ -1095,6 +1101,7 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
 
 
 
