@@ -415,7 +415,7 @@ async function loadCars() {
   }
 }
 
-aasync function loadTags() {
+async function loadTags() {
   try {
     const { data, error } = await supabase
       .from('members')
@@ -1082,6 +1082,7 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
 
 
 
