@@ -560,19 +560,17 @@ function renderCars(cars) {
       
       // STÁTUSZ CELL - JAVÍTOTT: bárki eladhatja + megjelenik ki adta el
       if (currentUser) {
-  const statusCell = c.Eladva ? 
-    `<td>
-      <span style="color: green; font-weight: bold;">✅ ELADVA</span>
-      <br>
-      <small style="color: #666; font-size: 11px;">Eladta: ${escapeHtml(c.sold_by || 'Ismeretlen')}</small>
-      ${c.sold_at ? `<br><small style="color: #666; font-size: 11px;">${new Date(c.sold_at).toLocaleDateString('hu-HU')}</small>` : ''}
-    </td>` :
-    `<td>
-      <span style="color: orange; font-weight: bold;">💰 ELADÓ</span>
-      <br>
-      <button class="btn-sold" onclick="markAsSold(${c.id})" style="margin-top: 5px;">Eladva</button>
-    </td>`;
-  rowHtml += statusCell;
+     const statusCell = c.Eladva ? 
+      `<td>
+        <span style="color: green; font-weight: bold;">✅ ELADVA</span>
+        ${c.sold_by ? `<br><small class="sold-by-info">Eladta: ${escapeHtml(c.sold_by)}</small>` : ''}
+        ${c.sold_at ? `<br><small class="sold-by-info">${new Date(c.sold_at).toLocaleDateString('hu-HU')}</small>` : ''}
+      </td>` :
+      `<td>
+        <span style="color: orange; font-weight: bold;">💰 ELADÓ</span>
+        ${currentUser ? `<br><button class="btn-sold" onclick="markAsSold(${c.id})" style="margin-top: 5px;">Eladva</button>` : ''}
+      </td>`;
+    rowHtml += statusCell;
 } else {
   // NEM BEJELENTKEZETT - csak a státusz szöveg, nincs gomb
   const statusCell = c.Eladva ? 
@@ -1061,5 +1059,6 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
 
 
