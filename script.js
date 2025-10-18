@@ -871,20 +871,33 @@ async function markAsSold(carId) {
       return;
     }
 
-    if (car.added_by !== currentUser.tagName && currentUser.role !== 'admin') {
-      showMessage('Csak a saját autódat jelölheted eladottnak!', 'error');
+    // MEGERŐSÍTÉS - csak ha még nincs eladva
+    if (car.sold) {
+      showMessage('Ez az autó már eladva!', 'warning');
       return;
     }
 
+    // MEGERŐSÍTŐ ABLAK
+    const confirmed = confirm(`Biztosan eladottá teszed ezt az autót?\n\nModell: ${car.model}\nEladó: ${currentUser.tagName}`);
+    
+    if (!confirmed) {
+      return;
+    }
+
+    // AUTÓ FRISSÍTÉSE - hozzáadjuk, hogy ki adta el
     const { error } = await supabase
       .from('cars')
-      .update({ sold: true })
+      .update({ 
+        sold: true,
+        sold_by: currentUser.tagName,  // Ki adta el
+        sold_at: new Date().toISOString()  // Mikor adták el
+      })
       .eq('id', carId);
 
     if (error) {
       showMessage('Hiba: ' + error.message, 'error');
     } else {
-      showMessage('Autó eladva státuszba állítva!', 'success');
+      showMessage(`✅ Autó eladva státuszba állítva! (Eladó: ${currentUser.tagName})`, 'success');
       loadCars();
       loadStats();
     }
@@ -1082,6 +1095,7 @@ window.addEventListener('error', function(e) {
   console.error('Global error:', e.error);
   showMessage('Váratlan hiba történt', 'error');
 });
+
 
 
 
