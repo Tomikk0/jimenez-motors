@@ -298,7 +298,6 @@
 
   <div class="form-header-with-filters">
     <div class="form-title">
-      <h2>🔧 Tuning Csomagok</h2>
     </div>
   </div>
 
@@ -450,7 +449,6 @@
             📁 Kép kiválasztása
           </button>
           <span id="galleryImageFileName" class="modern-image-file-name">Nincs kép kiválasztva</span>
-          <!-- ELTÁVOLÍTVA a felesleges törlés gomb -->
         </div>
         <div id="galleryImagePreview" class="modern-image-preview"></div>
       </div>
@@ -482,6 +480,41 @@
     </table>
   </div>
 </div>
+
+<!-- ÚJ: Galéria ár módosítás Modal -->
+<div id="editGalleryPriceModal" class="edit-modal gallery-edit-modal" style="display: none;">
+  <div class="edit-modal-content">
+    <div class="edit-modal-header">
+      <h3>✏️ Ár módosítása</h3>
+      <span class="edit-close" onclick="closeEditGalleryPriceModal()">&times;</span>
+    </div>
+    
+    <div class="edit-modal-body">
+      <input type="hidden" id="editGalleryCarId">
+      
+      <div class="car-info-card">
+        <h4 id="editGalleryCarModel"></h4>
+        <div class="current-price">Jelenlegi ár: <span id="editGalleryCurrentPrice"></span></div>
+      </div>
+
+      <div class="sale-form">
+        <div class="form-group">
+          <label for="editGalleryPrice">💵 Új ár</label>
+          <div class="price-input-container">
+            <input type="text" id="editGalleryPrice" placeholder="0" maxlength="15" oninput="formatInputPrice(this)">
+          </div>
+          <div class="price-hint">Írd be az új árat, automatikusan formázódik</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="edit-modal-footer">
+      <button class="btn-cancel" onclick="closeEditGalleryPriceModal()">❌ Mégse</button>
+      <button class="btn-confirm-sale" onclick="saveGalleryPrice()">💾 Ár mentése</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- LOGIN OLDAL -->
 <div id="loginPage" class="page">

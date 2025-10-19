@@ -164,7 +164,7 @@ async function addGalleryCar() {
     } else {
       console.log('✅ Galéria autó hozzáadva:', data);
       showGalleryMessage('Autó sikeresen hozzáadva a galériához!', 'success');
-      clearGalleryForm(); // Ez most nem jelenít meg üzenetet
+      clearGalleryForm();
       loadCarGallery();
     }
 
@@ -173,7 +173,6 @@ async function addGalleryCar() {
     showGalleryMessage('Hiba történt az autó hozzáadása során', 'error');
   }
 }
-
 
 // ÚJ: Ár módosítás modal megnyitása
 function openEditGalleryPriceModal(carId, currentPrice) {
