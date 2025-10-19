@@ -25,6 +25,11 @@
       <button class="nav-btn active" onclick="showPage('autok')">🚗 Autók</button>
       <button class="nav-btn" onclick="showPage('tagok')">👥 Tagok</button>
       <button class="nav-btn" onclick="showPage('statisztika')">📊 Statisztika</button>
+            <button class="nav-btn" onclick="showPage('autokKepek')">🖼️ Autó árak</button>
+        <button class="nav-btn" onclick="showPage('tuningok')">🔧 Tuningok</button>
+          <button class="nav-btn password-btn" onclick="openChangePasswordModal()" style="display: none;">
+    🔐 Jelszó
+  </button>
       <button class="nav-btn login-btn" onclick="showPage('login')">🔐 Bejelentkezés</button>
     </nav>
 
@@ -109,6 +114,7 @@
       <th id="vetelHeader" style="display: none;">💰 Vételár</th>
       <th id="kivantHeader" style="display: none;">🎯 Kívánt ár</th>
       <th>💵 Eladási ár</th>
+      <th id="keszpenzHeader">💳 Készpénz ár</th>
       <th>👤 Hozzáadta</th>
       <th>📊 Státusz</th>
       <th id="actionHeader" style="display: none;">⚡ Művelet</th>
@@ -116,7 +122,7 @@
   </thead>
         <tbody id="carTableBody">
           <tr>
-            <td colspan="9" class="table-loading">Autók betöltése</td>
+            <td colspan="10" class="table-loading">Autók betöltése</td>
           </tr>
         </tbody>
       </table>
@@ -124,55 +130,257 @@
   </div>
 
   <!-- TAGOK OLDAL -->
-  <div id="tagokPage" class="page">
+<div id="tagokPage" class="page">
     <nav class="main-nav">
-      <button class="nav-btn" onclick="showPage('autok')">🚗 Autók</button>
-      <button class="nav-btn active" onclick="showPage('tagok')">👥 Tagok</button>
-      <button class="nav-btn" onclick="showPage('statisztika')">📊 Statisztika</button>
-      <button class="nav-btn login-btn" onclick="showPage('login')">🔐 Bejelentkezés</button>
+        <button class="nav-btn" onclick="showPage('autok')">🚗 Autók</button>
+        <button class="nav-btn active" onclick="showPage('tagok')">👥 Tagok</button>
+        <button class="nav-btn" onclick="showPage('statisztika')">📊 Statisztika</button>
+              <button class="nav-btn" onclick="showPage('autokKepek')">🖼️ Autó árak</button>
+        <button class="nav-btn" onclick="showPage('tuningok')">🔧 Tuningok</button>
+          <button class="nav-btn password-btn" onclick="openChangePasswordModal()" style="display: none;">
+    🔐 Jelszó
+  </button>
+        <button class="nav-btn login-btn" onclick="showPage('login')">🔐 Bejelentkezés</button>
     </nav>
 
-    <h2>👥 Tagok</h2>
+    <div class="form-header-with-filters">
+        <div class="form-title">
+        </div>
+        <div class="compact-filters-row">
+            <!-- Napló ikon - CSAK ADMINOKNAK -->
+        <button id="historyButton" class="modern-btn-secondary" onclick="showKickedMembersHistory()">
+            📋 Tag történet
+        </button>
+        
+        <!-- KITŰZŐ GOMB - CSAK ADMINOKNAK -->
+        <button id="badgeButton" class="modern-btn-secondary" onclick="openBadgeModal()">
+            ⭐ Kitűzők
+        </button>
+        </div>
+    </div>
+
     <div id="tagMessage" class="message"></div>
 
-    <!-- Csak bejelentkezés után -->
-    <div id="tagAdminFunctions" style="display: none;">
-      <div class="modern-form-card">
-        <h3>➕ Új tag hozzáadása</h3>
-        <div class="modern-form-group">
-          <label for="newTag">👤 Tag neve</label>
-          <input type="text" id="newTag" class="modern-input" placeholder="Új tag neve">
+    <!-- Kirúgási modal - CSAK ADMINOKNAK -->
+    <div id="kickModal" class="edit-modal" style="display: none;">
+        <div class="edit-modal-content">
+            <div class="edit-modal-header">
+                <h3>🚫 Tag kirúgása</h3>
+                <span class="edit-close" onclick="closeKickModal()">&times;</span>
+            </div>
+            
+            <div class="edit-modal-body">
+                <div class="member-info-card">
+                    <h4 id="kickMemberName"></h4>
+                    <p style="color: #718096; margin: 10px 0;">Biztosan ki szeretnéd rúgni ezt a tagot?</p>
+                </div>
+
+                <div class="sale-form">
+                    <div class="form-group">
+                        <label for="kickReason">📝 Indoklás</label>
+                        <textarea id="kickReason" class="modern-input" placeholder="Add meg a kirúgás indokát..." 
+                                 style="width: 100%; min-height: 100px; padding: 12px; resize: vertical;"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="edit-modal-footer">
+                <button class="btn-cancel" onclick="closeKickModal()">❌ Mégse</button>
+                <button class="btn-confirm-sale" onclick="confirmKick()">✅ Kirúgás megerősítése</button>
+            </div>
         </div>
-        <div class="modern-form-actions">
-          <button onclick="addTag()" class="modern-btn-primary">➕ Tag hozzáadása</button>
-        </div>
-      </div>
     </div>
 
-<div class="modern-table-container">
-  <table class="modern-table modern-tags-table" id="tagsTable">
-        <thead>
-          <tr>
-            <th>Név</th>
-            <th>Rang</th>
-            <th id="tagActionHeader" style="display: none;">Művelet</th>
-          </tr>
-        </thead>
-        <tbody id="tagsTableBody">
-          <tr>
-        <td colspan="2" class="table-loading">Tagok betöltése</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+    <!-- Tag történet napló modal - CSAK ADMINOKNAK -->
+    <div id="kickedMembersModal" class="edit-modal" style="display: none;">
+        <div class="edit-modal-content" style="max-width: 900px; max-height: 90vh;">
+            <div class="edit-modal-header">
+                <h3>📋 Tag történet napló</h3>
+                <span class="edit-close" onclick="closeKickedMembersModal()">&times;</span>
+            </div>
+            
+            <div class="edit-modal-body" style="max-height: 70vh; overflow-y: auto; padding: 30px;">
+                <div id="kickedMembersList" class="history-container">
+                    <div class="table-loading">Napló betöltése...</div>
+                </div>
+            </div>
 
+            <div class="edit-modal-footer">
+                <button class="btn-cancel" onclick="closeKickedMembersModal()">❌ Bezárás</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KITŰZŐ MODAL - CSAK ADMINOKNAK -->
+    <div id="badgeModal" class="edit-modal" style="display: none;">
+        <div class="edit-modal-content" style="max-width: 900px; max-height: 90vh;">
+            <div class="edit-modal-header">
+                <h3>⭐ Kitűzők - Rang Megjegyzések</h3>
+                <span class="edit-close" onclick="closeBadgeModal()">&times;</span>
+            </div>
+            
+            <div class="edit-modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div id="badgeMessage" class="message"></div>
+
+                <!-- Új megjegyzés hozzáadása - CSAK ADMIN -->
+                <div class="badge-add-form">
+                    <h4>➕ Új megjegyzés hozzáadása</h4>
+                    <div class="modern-form-row">
+                        <div class="modern-form-group">
+                            <label for="badgeRankSelect">🎯 Rang kiválasztása</label>
+                            <select id="badgeRankSelect" class="modern-input">
+                                <option value="">Válassz rangot...</option>
+                                <option value="Owner">👑 Owner</option>
+                                <option value="Co-Owner">💎 Co-Owner</option>
+                                <option value="Manager">💼 Manager</option>
+                                <option value="Team Leader">⭐ Team Leader</option>
+                                <option value="Top Salesman">🚀 Top Salesman</option>
+                                <option value="Sr. Salesman">🔶 Sr. Salesman</option>
+                                <option value="Jr. Salesman">🔹 Jr. Salesman</option>
+                                <option value="Towing Specialist">🔧 Towing Specialist</option>
+                                <option value="Tow Operator">⚡ Tow Operator</option>
+                                <option value="Truck Driver">🚛 Truck Driver</option>
+                                <option value="Member">👤 Member</option>
+                            </select>
+                        </div>
+                        
+                        <div class="modern-form-group">
+                            <label for="badgeNote">📝 Megjegyzés</label>
+                            <textarea id="badgeNote" class="modern-input" 
+                                     placeholder="Írj megjegyzést ehhez a ranghoz..." 
+                                     style="min-height: 80px; resize: vertical;"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="modern-form-actions">
+                        <button onclick="addBadgeNote()" class="modern-btn-primary">
+                            💾 Megjegyzés mentése
+                        </button>
+                        <button onclick="refreshBadges()" class="modern-btn-secondary">
+                            🔄 Frissítés
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Kitűzők listája -->
+                <div class="badge-container" id="badgeContainer">
+                    <div class="table-loading">Kitűzők betöltése...</div>
+                </div>
+            </div>
+
+            <div class="edit-modal-footer">
+                <button class="btn-cancel" onclick="closeBadgeModal()">❌ Bezárás</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modern-table-container">
+          <!-- Csak bejelentkezés után -->
+           
+<div id="tagAdminFunctions" style="display: none;">
+    <div class="compact-add-tag">
+        <input type="text" id="newTag" placeholder="Új tag neve">
+        <button onclick="addTag()">➕ Hozzáadás</button>
+    </div>
+</div>
+        <table class="modern-table modern-tags-table" id="tagsTable">
+            <thead>
+                <tr>
+                    <th>Név</th>
+                    <th>Rang</th>
+                    <th id="tagActionHeader" style="display: none;">Művelet</th>
+                </tr>
+            </thead>
+            <tbody id="tagsTableBody">
+                <tr>
+                    <td colspan="3" class="table-loading">Tagok betöltése</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- TUNINGOK OLDAL -->
+<div id="tuningokPage" class="page">
+    <nav class="main-nav">
+        <button class="nav-btn" onclick="showPage('autok')">🚗 Autók</button>
+        <button class="nav-btn" onclick="showPage('tagok')">👥 Tagok</button>
+        <button class="nav-btn" onclick="showPage('statisztika')">📊 Statisztika</button>
+            <button class="nav-btn" onclick="showPage('autokKepek')">🖼️ Autó árak</button>
+        <button class="nav-btn active" onclick="showPage('tuningok')">🔧 Tuningok</button>
+          <button class="nav-btn password-btn" onclick="openChangePasswordModal()" style="display: none;">
+    🔐 Jelszó
+  </button>
+        <button class="nav-btn login-btn" onclick="showPage('login')">🔐 Bejelentkezés</button>
+    </nav>
+
+    <div class="form-header-with-filters">
+        <div class="form-title">
+            <h2>🔧 Tuning Csomagok</h2>
+        </div>
+    </div>
+
+    <div id="tuningMessage" class="message"></div>
+
+    <!-- Új tuning hozzáadása - CSAK BEJELENTKEZÉS UTÁN -->
+    <div id="tuningAdminFunctions" style="display: none;">
+        <div class="modern-form-card">
+            <div class="modern-form-header">
+                <h3>➕ Új tuning csomag hozzáadása</h3>
+            </div>
+
+            <div class="modern-form-row">
+                <div class="modern-form-group">
+                    <label for="tuningName">🔧 Tuning név</label>
+                    <input type="text" id="tuningName" class="modern-input" placeholder="Pl.: Teljes motor tuning">
+                </div>
+
+                <div class="modern-form-group">
+                    <label for="tuningPrice">💰 Ár</label>
+                    <div class="modern-input-container price">
+                        <input type="text" id="tuningPrice" class="modern-input" placeholder="0" 
+                               oninput="formatInputPrice(this)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modern gombok -->
+            <div class="modern-form-actions">
+                <button onclick="addTuning()" class="modern-btn-primary">➕ Tuning hozzáadása</button>
+                <button onclick="loadTunings()" class="modern-btn-secondary">🔄 Frissítés</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tuningok táblázat -->
+    <div class="modern-table-container">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>🔧 Tuning név</th>
+                    <th>💰 Ár</th>
+                    <th id="tuningActionHeader" style="display: none;">⚡ Művelet</th>
+                </tr>
+            </thead>
+            <tbody id="tuningTableBody">
+                <tr>
+                    <td colspan="3" class="table-loading">Tuningok betöltése...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
   <!-- STATISZTIKA OLDAL -->
   <div id="statisztikaPage" class="page">
     <nav class="main-nav">
       <button class="nav-btn" onclick="showPage('autok')">🚗 Autók</button>
       <button class="nav-btn" onclick="showPage('tagok')">👥 Tagok</button>
       <button class="nav-btn active" onclick="showPage('statisztika')">📊 Statisztika</button>
+      <button class="nav-btn" onclick="showPage('autokKepek')">🖼️ Autó árak</button>
+      <button class="nav-btn" onclick="showPage('tuningok')">🔧 Tuningok</button>
+        <button class="nav-btn password-btn" onclick="openChangePasswordModal()" style="display: none;">
+    🔐 Jelszó
+  </button>
       <button class="nav-btn login-btn" onclick="showPage('login')">🔐 Bejelentkezés</button>
     </nav>
 
@@ -201,6 +409,92 @@
     </div>
   </div>
 
+  <!-- Autó árak OLDAL -->
+<div id="autokKepekPage" class="page">
+    <nav class="main-nav">
+        <button class="nav-btn" onclick="showPage('autok')">🚗 Autók</button>
+        <button class="nav-btn" onclick="showPage('tagok')">👥 Tagok</button>
+        <button class="nav-btn" onclick="showPage('statisztika')">📊 Statisztika</button>
+        <button class="nav-btn active" onclick="showPage('autokKepek')">🖼️ Autó árak</button>
+        <button class="nav-btn" onclick="showPage('tuningok')">🔧 Tuningok</button>
+          <button class="nav-btn password-btn" onclick="openChangePasswordModal()" style="display: none;">
+    🔐 Jelszó
+  </button>
+        <button class="nav-btn login-btn" onclick="showPage('login')">🔐 Bejelentkezés</button>
+    </nav>
+
+    <div class="form-header-with-filters">
+        <div class="form-title">
+        </div>
+    </div>
+
+    <div id="galleryMessage" class="message"></div>
+
+    <!-- Autó hozzáadása - CSAK BEJELENTKEZÉS UTÁN -->
+    <div id="galleryAdminFunctions" style="display: none;">
+        <div class="modern-form-card">
+            <div class="modern-form-header">
+                <h3>➕ Új autó hozzáadása a listához</h3>
+            </div>
+<!-- MODELL KERESŐ RÉSZ - CSAK GALÉRIA -->
+                <div class="modern-form-group">
+                    <label for="galleryModelSearch">🚗 Modell</label>
+                    <div class="model-search-container modern">
+                        <input type="text" id="galleryModelSearch" class="modern-input" placeholder="Keresés modellek között..." 
+                              onfocus="showGalleryModelDropdown()" oninput="filterGalleryModels()">
+                        <div id="galleryModelDropdown" class="model-dropdown modern"></div>
+                    </div>
+
+                <div class="modern-form-group">
+                    <label for="galleryPrice">💰 Ár</label>
+                    <div class="modern-input-container price">
+                        <input type="text" id="galleryPrice" class="modern-input" placeholder="0" 
+                               oninput="formatInputPrice(this)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modern kép feltöltés -->
+            <div class="modern-image-section">
+                <h4>📷 Autó képe</h4>
+                <div class="modern-image-upload-container">
+                    <input type="file" id="galleryCarImage" accept="image/*" style="display: none;" onchange="handleGalleryImageSelect(event)">
+                    <button type="button" onclick="document.getElementById('galleryCarImage').click()" class="modern-image-upload-btn">
+                        📁 Kép kiválasztása
+                    </button>
+                    <span id="galleryImageFileName" class="modern-image-file-name">Nincs kép kiválasztva</span>
+                </div>
+                <div id="galleryImagePreview" class="modern-image-preview"></div>
+            </div>
+
+            <!-- Modern gombok -->
+            <div class="modern-form-actions">
+                <button onclick="addGalleryCar()" class="modern-btn-primary">➕ Autó hozzáadása</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Autó árak táblázat -->
+    <div class="modern-table-container">
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>📷 Kép</th>
+                    <th>🚗 Modell</th>
+                    <th>💰 Ár</th>
+                    <th id="galleryActionHeader" style="display: none;">⚡ Művelet</th>
+                </tr>
+            </thead>
+            <tbody id="galleryTableBody">
+                <tr>
+                    <td colspan="4" class="table-loading">Autó árak betöltése...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODIFIKÁLT RESZ - Jelszóváltoztatás gomb a navigációban -->
 <div id="loginPage" class="page">
   <div class="modern-login-card">
     <div class="modern-login-header">
@@ -230,11 +524,49 @@
       <button onclick="showPage('autok')" class="modern-back-btn">
         ⬅️ Vissza a böngészéshez
       </button>
+      <!-- ELTÁVOLÍTVA: a jelszóváltoztatás gomb innen -->
       <div id="loginMessage" class="message" style="margin-top: 20px;"></div>
     </div>
   </div>
 </div>
+<!-- Jelszóváltoztatás Modal -->
+<div id="changePasswordModal" class="edit-modal" style="display: none;">
+    <div class="edit-modal-content" style="max-width: 500px;">
+        <div class="edit-modal-header">
+            <h3>🔐 Jelszó megváltoztatása</h3>
+            <span class="edit-close" onclick="closeChangePasswordModal()">&times;</span>
+        </div>
+        
+        <div class="edit-modal-body">
+            <div id="changePasswordMessage" class="message"></div>
+            
+            <div class="sale-form">
+                <div class="form-group">
+                    <label for="currentPassword">🔒 Jelenlegi jelszó</label>
+                    <input type="password" id="currentPassword" class="modern-input" 
+                           placeholder="Add meg a jelenlegi jelszavad" autocomplete="current-password">
+                </div>
 
+                <div class="form-group">
+                    <label for="newPassword">🆕 Új jelszó</label>
+                    <input type="password" id="newPassword" class="modern-input" 
+                           placeholder="Add meg az új jelszót" autocomplete="new-password">
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">✅ Új jelszó megerősítése</label>
+                    <input type="password" id="confirmPassword" class="modern-input" 
+                           placeholder="Add meg újra az új jelszót" autocomplete="new-password">
+                </div>
+            </div>
+        </div>
+
+        <div class="edit-modal-footer">
+            <button class="btn-cancel" onclick="closeChangePasswordModal()">❌ Mégse</button>
+            <button class="btn-confirm-sale" onclick="changePassword()">💾 Jelszó megváltoztatása</button>
+        </div>
+    </div>
+</div>
   <!-- Modern Eladás Modal -->
   <div id="editSaleModal" class="edit-modal" style="display: none;">
     <div class="edit-modal-content">
@@ -299,3 +631,4 @@
 
   <script src="script.js"></script>
 </body>
+</html>
