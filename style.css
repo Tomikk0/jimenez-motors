@@ -2199,3 +2199,20 @@ h2 {
     display: inline-block;
 }
 
+/* PP ár stílusok */
+.price-cell[style*="color: #805ad5"] {
+    font-weight: 700 !important;
+    color: #805ad5 !important;
+}
+
+/* PP ár input stílus */
+.modern-input-container:not(.price)::before {
+    content: '🎯';
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: bold;
+    font-size: 1.1em;
+    z-index: 2;
+}

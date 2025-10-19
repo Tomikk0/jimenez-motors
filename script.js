@@ -556,7 +556,7 @@ function renderTunings(tunings) {
     if (!tunings || tunings.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="3" class="empty-table-message">
+                <td colspan="4" class="empty-table-message">
                     🔧 Nincsenek tuning csomagok<br>
                     <small style="opacity: 0.7;">Adj hozzá egy új tuning csomagot a fenti űrlappal!</small>
                 </td>
@@ -570,8 +570,9 @@ function renderTunings(tunings) {
     tunings.forEach(tuning => {
         const row = document.createElement('tr');
         
-        // Ár formázása
-        const ar = tuning.price ? new Intl.NumberFormat('hu-HU').format(tuning.price) + ' $' : '-';
+        // Árak formázása
+        const dollarAr = tuning.price ? new Intl.NumberFormat('hu-HU').format(tuning.price) + ' $' : '-';
+        const ppAr = tuning.pp_price ? new Intl.NumberFormat('hu-HU').format(tuning.pp_price) + ' PP' : '-';
         
         // MŰVELET GOMBOK - CSAK ADMINOKNAK
         let actionCell = '';
@@ -589,7 +590,8 @@ function renderTunings(tunings) {
         
         row.innerHTML = `
             <td style="font-weight: 600; color: #2d3748;">${escapeHtml(tuning.name || '')}</td>
-            <td class="price-cell price-sale">${ar}</td>
+            <td class="price-cell price-sale">${dollarAr}</td>
+            <td class="price-cell" style="color: #805ad5; font-weight: 700;">${ppAr}</td>
             ${actionCell}
         `;
         
@@ -604,20 +606,23 @@ async function addTuning() {
 
         const name = document.getElementById('tuningName').value.trim();
         const price = document.getElementById('tuningPrice').value.replace(/[^\d]/g, '');
+        const ppPrice = document.getElementById('tuningPPPrice').value.replace(/[^\d]/g, '');
 
         if (!name) {
             showTuningMessage('Add meg a tuning nevét!', 'warning');
             return;
         }
 
-        if (!price) {
-            showTuningMessage('Add meg az árat!', 'warning');
+        // Legalább egy ár megadása kötelező
+        if (!price && !ppPrice) {
+            showTuningMessage('Add meg legalább egy árat ($ vagy PP)!', 'warning');
             return;
         }
 
         const tuningData = {
             name: name,
-            price: parseInt(price),
+            price: price ? parseInt(price) : null,
+            pp_price: ppPrice ? parseInt(ppPrice) : null,
             created_by: currentUser.tagName
         };
 
@@ -642,12 +647,18 @@ async function addTuning() {
     }
 }
 
-// Tuning törlése - CSAK ADMIN (megerősítés nélkül)
+// Tuning űrlap törlése
+function clearTuningForm() {
+    document.getElementById('tuningName').value = '';
+    document.getElementById('tuningPrice').value = '';
+    document.getElementById('tuningPPPrice').value = '';
+}
+
+// Tuning törlése - CSAK ADMIN
 async function deleteTuning(tuningId) {
     try {
         if (!checkAdminAccess()) return;
 
-        // NINCS megerősítő felugró ablak - azonnal törlés
         const { error } = await supabase
             .from('tuning_options')
             .delete()
@@ -663,12 +674,6 @@ async function deleteTuning(tuningId) {
         console.error('deleteTuning hiba:', error);
         showTuningMessage('Hiba történt a törlés során', 'error');
     }
-}
-
-// Tuning űrlap törlése
-function clearTuningForm() {
-    document.getElementById('tuningName').value = '';
-    document.getElementById('tuningPrice').value = '';
 }
 
 // Tuning üzenetek

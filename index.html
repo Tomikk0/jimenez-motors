@@ -306,11 +306,9 @@
         <button class="nav-btn" onclick="showPage('autok')">🚗 Autók</button>
         <button class="nav-btn" onclick="showPage('tagok')">👥 Tagok</button>
         <button class="nav-btn" onclick="showPage('statisztika')">📊 Statisztika</button>
-            <button class="nav-btn" onclick="showPage('autokKepek')">🖼️ Autó árak</button>
+        <button class="nav-btn" onclick="showPage('autokKepek')">🖼️ Autó árak</button>
         <button class="nav-btn active" onclick="showPage('tuningok')">🔧 Tuningok</button>
-          <button class="nav-btn password-btn" onclick="openChangePasswordModal()" style="display: none;">
-    🔐 Jelszó
-  </button>
+        <button class="nav-btn password-btn" onclick="openChangePasswordModal()" style="display: none;">🔐 Jelszó</button>
         <button class="nav-btn login-btn" onclick="showPage('login')">🔐 Bejelentkezés</button>
     </nav>
 
@@ -336,9 +334,18 @@
                 </div>
 
                 <div class="modern-form-group">
-                    <label for="tuningPrice">💰 Ár</label>
+                    <label for="tuningPrice">💰 Ár ($)</label>
                     <div class="modern-input-container price">
                         <input type="text" id="tuningPrice" class="modern-input" placeholder="0" 
+                               oninput="formatInputPrice(this)">
+                    </div>
+                </div>
+
+                <!-- ÚJ: PP ár mező -->
+                <div class="modern-form-group">
+                    <label for="tuningPPPrice">🎯 Ár (PP)</label>
+                    <div class="modern-input-container">
+                        <input type="text" id="tuningPPPrice" class="modern-input" placeholder="0" 
                                oninput="formatInputPrice(this)">
                     </div>
                 </div>
@@ -358,13 +365,14 @@
             <thead>
                 <tr>
                     <th>🔧 Tuning név</th>
-                    <th>💰 Ár</th>
+                    <th>💰 Ár ($)</th>
+                    <th>🎯 Ár (PP)</th>
                     <th id="tuningActionHeader" style="display: none;">⚡ Művelet</th>
                 </tr>
             </thead>
             <tbody id="tuningTableBody">
                 <tr>
-                    <td colspan="3" class="table-loading">Tuningok betöltése...</td>
+                    <td colspan="4" class="table-loading">Tuningok betöltése...</td>
                 </tr>
             </tbody>
         </table>
