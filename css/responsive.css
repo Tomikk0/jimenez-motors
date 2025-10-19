@@ -1,0 +1,291 @@
+/* Reszponzív design */
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+  }
+  
+  .modern-form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .modern-form-card {
+    padding: 20px;
+  }
+  
+  .modern-form-actions {
+    flex-direction: column;
+  }
+  
+  .modern-tuning-container {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+  
+  .modern-image-upload-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .modern-btn-primary,
+  .modern-btn-secondary {
+    min-width: 100%;
+  }
+  
+  .modern-table-container {
+    padding: 15px;
+    margin: 10px 0;
+  }
+  
+  .main-nav {
+    gap: 8px;
+  }
+  
+  .nav-btn {
+    padding: 10px 16px;
+    font-size: 0.85em;
+  }
+  
+  .stats-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .modern-login-card {
+    padding: 40px 25px;
+  }
+  
+  .edit-modal-content {
+    margin: 2vh auto;
+    width: 98%;
+  }
+  
+  .edit-modal-body {
+    padding: 20px;
+  }
+  
+  .car-info-card {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .edit-modal-footer {
+    flex-direction: column;
+  }
+  
+  .modern-login-header h3 {
+    font-size: 1.6em;
+  }
+  
+  .modern-login-input {
+    padding: 14px 16px;
+  }
+  
+  .modern-login-btn {
+    padding: 16px 25px;
+  }
+  
+  .header-with-image {
+    padding: 20px 0 15px 0;
+  }
+  
+  .header-logo-container {
+    gap: 15px;
+    margin-bottom: 12px;
+  }
+  
+  .header-image {
+    width: 60px;
+    height: 60px;
+    border-width: 3px;
+  }
+  
+  .logo-main {
+    font-size: 2em;
+  }
+  
+  .logo-subtitle {
+    font-size: 1em;
+  }
+  
+  .logo-years {
+    font-size: 0.9em;
+  }
+  
+  .modern-action-buttons {
+    min-width: 140px;
+  }
+  
+  .modern-action-buttons select {
+    font-size: 0.8em !important;
+  }
+  
+  .history-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .history-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .form-header-with-filters {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0 10px;
+  }
+  
+  .form-title h2 {
+    text-align: center;
+  }
+  
+  .compact-filters-row {
+    justify-content: center;
+    margin-top: 15px;
+    gap: 10px;
+  }
+  
+  #historyButton,
+  #badgeButton {
+    top: 0;
+    min-width: 140px;
+    width: 100%;
+  }
+  
+  .compact-image-upload-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+  
+  .compact-form-actions {
+    justify-content: center;
+  }
+  
+  .compact-form-actions .modern-btn-primary,
+  .compact-form-actions .modern-btn-secondary {
+    min-width: 120px;
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-logo-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .logo-main {
+    font-size: 1.8em;
+  }
+  
+  .compact-filters-row {
+    flex-direction: column;
+  }
+  
+  #historyButton,
+  #badgeButton {
+    width: 100%;
+  }
+  
+  .compact-form-actions {
+    flex-direction: column;
+  }
+  
+  .compact-form-actions .modern-btn-primary,
+  .compact-form-actions .modern-btn-secondary {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+/* Készpénz ár oszlop elrejtése bejelentkezés után */
+#keszpenzHeader,
+.price-keszpenz-cell {
+  display: table-cell;
+}
+
+.logged-in #keszpenzHeader,
+.logged-in .price-keszpenz-cell {
+  display: none !important;
+}
+
+/* Művelet oszlop elrejtése bejelentkezés nélkül */
+#tagsTable th:last-child,
+#tagsTable td:last-child {
+  display: none !important;
+}
+
+/* Bejelentkezés után megjelenik a művelet oszlop */
+.logged-in.admin #tagsTable th:last-child,
+.logged-in.admin #tagsTable td:last-child {
+  display: table-cell !important;
+}
+
+/* Vízszintes vonal eltávolítása az utolsó oszlop után */
+.modern-tags-table th:last-child::after,
+.modern-tags-table td:last-child::after {
+  display: none !important;
+}
+
+/* STATISZTIKA GOMB - PONTOSAN ÚGY, MINT A VÉTELÁR */
+.main-nav .nav-btn[onclick="showPage('statisztika')"] {
+  display: none;
+}
+
+.logged-in .main-nav .nav-btn[onclick="showPage('statisztika')"] {
+  display: inline-block;
+}
+
+#vetelHeader,
+#kivantHeader,
+#actionHeader,
+#tagActionHeader {
+  display: none !important;
+}
+
+/* Bejelentkezés után megjelennek */
+.logged-in #vetelHeader,
+.logged-in #kivantHeader,
+.logged-in #actionHeader,
+.logged-in #tagActionHeader {
+  display: table-cell !important;
+}
+
+/* Autó Képek gomb - pontosan úgy, mint a Statisztika */
+.main-nav .nav-btn[onclick="showPage('autokKepek')"] {
+  display: none;
+}
+
+.logged-in .main-nav .nav-btn[onclick="showPage('autokKepek')"] {
+  display: inline-block;
+}
+
+/* Tuning gomb elrejtése bejelentkezés nélkül */
+.main-nav .nav-btn[onclick="showPage('tuningok')"] {
+  display: none;
+}
+
+.logged-in .main-nav .nav-btn[onclick="showPage('tuningok')"] {
+  display: inline-block;
+}
+
+/* Kisebb törlés gombok a tuning táblázatban */
+#tuningTableBody .modern-btn-delete {
+  padding: 4px 8px !important;
+  font-size: 0.7em !important;
+  min-width: unset !important;
+  width: auto !important;
+  margin: 0 auto !important;
+  display: inline-block !important;
+}
+
+#tuningTableBody .action-cell {
+  padding: 6px 4px !important;
+  width: 80px !important;
+}
+
+#tuningTableBody .modern-action-buttons {
+  gap: 0 !important;
+  justify-content: center !important;
+  min-width: unset !important;
+}
