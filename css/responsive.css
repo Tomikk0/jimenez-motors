@@ -449,4 +449,16 @@
 /* Bejelentkezés után megjelenik */
 .logged-in.admin #tagAdminButton {
   display: flex !important;
+
+}
+/* Felvétel dátum oszlop elrejtése bejelentkezés nélkül */
+#tagsTable th:nth-child(3),
+#tagsTable td:nth-child(3) {
+    display: none !important;
+}
+
+/* Bejelentkezés után megjelenik a felvétel dátum oszlop */
+.logged-in #tagsTable th:nth-child(3),
+.logged-in #tagsTable td:nth-child(3) {
+    display: table-cell !important;
 }
