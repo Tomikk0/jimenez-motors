@@ -312,3 +312,139 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+// Event listener-ek a modalokhoz
+document.addEventListener('click', function(event) {
+    // ... meglévő kód ...
+    
+    const editTuningModal = document.getElementById('editTuningModal');
+    if (event.target === editTuningModal) {
+        closeEditTuningModal();
+    }
+});
+
+// Tuning ár input formázása
+document.addEventListener('DOMContentLoaded', function() {
+  const tuningPPInput = document.getElementById('editTuningPPPrice');
+  const tuningPriceInput = document.getElementById('editTuningPrice');
+  
+  if (tuningPPInput) {
+    tuningPPInput.addEventListener('input', function() {
+      formatInputPrice(this);
+    });
+  }
+  
+  if (tuningPriceInput) {
+    tuningPriceInput.addEventListener('input', function() {
+      formatInputPrice(this);
+    });
+  }
+});
+
+// Ár módosítás modal megnyitása
+function openEditGalleryPriceModal(carId, currentBasePrice, currentSalePrice) {
+  if (!currentUser) {
+    showGalleryMessage('Bejelentkezés szükséges!', 'warning');
+    return;
+  }
+
+  // Aktuális autó adatainak betöltése
+  const car = allCars.find(c => c.id === carId) || {};
+  
+  // Modal tartalom feltöltése
+  document.getElementById('editGalleryCarId').value = carId;
+  document.getElementById('editGalleryCarModel').textContent = car.model || 'Ismeretlen modell';
+  
+  // Árak formázása
+  const formattedBasePrice = currentBasePrice ? new Intl.NumberFormat('hu-HU').format(currentBasePrice) : '';
+  const formattedSalePrice = currentSalePrice ? new Intl.NumberFormat('hu-HU').format(currentSalePrice) : '';
+  
+  document.getElementById('editGalleryBasePrice').value = formattedBasePrice;
+  document.getElementById('editGalleryPrice').value = formattedSalePrice;
+  
+  // Modal megjelenítése
+  document.getElementById('editGalleryPriceModal').style.display = 'block';
+  
+  // Input fókusz
+  setTimeout(() => {
+    document.getElementById('editGalleryBasePrice').focus();
+  }, 300);
+}
+
+// Ár módosítás mentése
+async function saveGalleryPrice() {
+  try {
+    const carId = document.getElementById('editGalleryCarId').value;
+    const newBasePrice = document.getElementById('editGalleryBasePrice').value.replace(/[^\d]/g, '');
+    const newSalePrice = document.getElementById('editGalleryPrice').value.replace(/[^\d]/g, '');
+    
+    if (!carId) {
+      showGalleryMessage('Autó azonosító hiányzik!', 'error');
+      return;
+    }
+    
+    if (!newSalePrice) {
+      showGalleryMessage('Add meg az eladási árat!', 'warning');
+      return;
+    }
+    
+    const salePriceValue = parseInt(newSalePrice);
+    if (isNaN(salePriceValue) || salePriceValue <= 0) {
+      showGalleryMessage('Érvényes eladási árat adj meg!', 'error');
+      return;
+    }
+
+    // Ellenőrizzük, hogy a felhasználónak joga van módosítani
+    const { data: car, error: carError } = await supabase
+      .from('cars')
+      .select('*')
+      .eq('id', carId)
+      .single();
+
+    if (carError || !car) {
+      showGalleryMessage('Autó nem található!', 'error');
+      return;
+    }
+
+    if (car.added_by !== currentUser.tagName && currentUser.role !== 'admin') {
+      showGalleryMessage('Csak a saját autódat módosíthatod!', 'error');
+      return;
+    }
+
+    // Árak frissítése
+    const updateData = {
+      sale_price: salePriceValue,
+      updated_at: new Date().toISOString()
+    };
+
+    // Csak akkor adjuk hozzá az alap árat, ha meg van adva
+    if (newBasePrice) {
+      updateData.base_price = parseInt(newBasePrice);
+    } else {
+      updateData.base_price = null;
+    }
+
+    const { error } = await supabase
+      .from('cars')
+      .update(updateData)
+      .eq('id', carId);
+
+    if (error) {
+      showGalleryMessage('Hiba történt az ár módosítása során: ' + error.message, 'error');
+    } else {
+      showGalleryMessage('✅ Árak sikeresen módosítva!', 'success');
+      closeEditGalleryPriceModal();
+      loadCarGallery(); // Frissítjük a táblázatot
+    }
+    
+  } catch (error) {
+    console.error('saveGalleryPrice hiba:', error);
+    showGalleryMessage('Hiba történt az ár módosítása során', 'error');
+  }
+}
+// Galéria űrlap törlése
+function clearGalleryForm() {
+  document.getElementById('galleryModelSearch').value = '';
+  document.getElementById('galleryBasePrice').value = '';
+  document.getElementById('galleryPrice').value = '';
+  clearGalleryImage();
+}

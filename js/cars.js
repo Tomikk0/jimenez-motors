@@ -5,6 +5,7 @@ async function loadCars() {
       .from('cars')
       .select('*')
       .eq('is_gallery', false)
+      .eq('sold', false)  // CSAK A NEM ELADOTT AUTÓK!
       .order('created_at', { ascending: false });
     
     if (error) throw error;
@@ -28,6 +29,7 @@ async function loadCars() {
       sold_at: car.sold_at
     }));
     
+    console.log('🚗 Autók betöltve - Csak nem eladottak:', allCars.length, 'db');
     renderCars(allCars);
   } catch (error) {
     console.error('Cars load error:', error);
@@ -43,11 +45,11 @@ function renderCars(cars) {
     tbody.innerHTML = '';
     
     if (!cars || cars.length === 0) {
-      const colCount = currentUser ? 10 : 8;
+      const colCount = currentUser ? 10 : 8; // Vissza az eredeti oszlopszám
       tbody.innerHTML = `
         <tr>
           <td colspan="${colCount}" class="empty-table-message">
-            Nincs megjeleníthető autó<br>
+            🚗 Nincsenek eladó autók<br>
             <small style="opacity: 0.7;">Adj hozzá egy új autót a fenti űrlappal!</small>
           </td>
         </tr>
@@ -57,9 +59,6 @@ function renderCars(cars) {
     
     cars.forEach(c => {
       const row = document.createElement('tr');
-      if (c.Eladva) {
-        row.classList.add('sold-row');
-      }
       
       // KÉP RÉSZ
       let imageHtml = '';
@@ -116,23 +115,12 @@ function renderCars(cars) {
         keszpenzArCell = `<td class="price-cell price-keszpenz price-keszpenz-cell">${keszpenzAr ? keszpenzAr + ' $' : '-'}</td>`;
       }
       
-      // STÁTUSZ
-      let statusCell = '';
-      if (c.Eladva) {
-        statusCell = `
-          <td>
-            <span class="status-badge status-sold">✅ ELADVA</span>
-            ${c.sold_by ? `<br><small style="color: #718096; font-size: 0.8em;">Eladta: ${escapeHtml(c.sold_by)}</small>` : ''}
-            ${c.sold_at ? `<br><small style="color: #718096; font-size: 0.8em;">${new Date(c.sold_at).toLocaleDateString('hu-HU')}</small>` : ''}
-          </td>
-        `;
-      } else {
-        statusCell = `
-          <td>
-            <span class="status-badge status-available">💰 ELADÓ</span>
-          </td>
-        `;
-      }
+      // STÁTUSZ - MINDIG "ELADÓ", MIVEL CSAK ELADÓ AUTÓK VANNAK
+      let statusCell = `
+        <td>
+          <span class="status-badge status-available">💰 ELADÓ</span>
+        </td>
+      `;
       
       // MŰVELET GOMBOK
       let actionCell = '';
@@ -141,9 +129,8 @@ function renderCars(cars) {
         
         let buttonsHtml = '';
         
-        if (!c.Eladva) {
-          buttonsHtml += `<button class="modern-btn-sold" onclick="openSoldModal(${c.id})">Eladva</button>`;
-        }
+        // MINDIG MEGJELENIK AZ "ELADVA" GOMB, MIVEL MINDEN AUTÓ ELADÓ
+        buttonsHtml += `<button class="modern-btn-sold" onclick="openSoldModal(${c.id})">Eladva</button>`;
         
         if (canDelete) {
           buttonsHtml += `<button class="modern-btn-delete" onclick="deleteCar(${c.id})">❌ Törlés</button>`;
@@ -160,7 +147,7 @@ function renderCars(cars) {
         actionCell = '';
       }
       
-      // Hozzáadta oszlop
+      // Hozzáadta oszlop - NAGY TELEFONSZÁMMAL
       let hozzaadtaCell = '';
       if (c.Hozzáadta) {
         const eladoTag = tagOptions.find(tag => tag.name === c.Hozzáadta);
@@ -170,7 +157,7 @@ function renderCars(cars) {
           hozzaadtaCell = `
             <td style="color: #4a5568;">
               <div style="font-weight: 600;">${escapeHtml(c.Hozzáadta)}</div>
-              <div style="color: #4299e1; font-size: 0.85em; font-family: monospace; margin-top: 4px;">
+              <div style="color: #4299e1; font-size: 1.3em; font-family: monospace; margin-top: 8px; font-weight: 700;">
                 📞 ${escapeHtml(telefonszam)}
               </div>
             </td>
@@ -179,7 +166,7 @@ function renderCars(cars) {
           hozzaadtaCell = `
             <td style="color: #4a5568;">
               <div style="font-weight: 600;">${escapeHtml(c.Hozzáadta)}</div>
-              <div style="color: #a0aec0; font-size: 0.8em; font-style: italic; margin-top: 4px;">
+              <div style="color: #a0aec0; font-size: 0.9em; font-style: italic; margin-top: 4px;">
                 nincs telefonszám
               </div>
             </td>
@@ -189,7 +176,7 @@ function renderCars(cars) {
         hozzaadtaCell = `<td style="color: #4a5568;">-</td>`;
       }
       
-      // SOR ÖSSZEÁLLÍTÁSA
+      // SOR ÖSSZEÁLLÍTÁSA - STÁTUSZZAL
       if (currentUser) {
         row.innerHTML = `
           ${imageHtml}
@@ -219,7 +206,7 @@ function renderCars(cars) {
   } catch (error) {
     console.error('renderCars hiba:', error);
     const tbody = document.getElementById('carTableBody');
-    const colCount = currentUser ? 10 : 8;
+    const colCount = currentUser ? 10 : 8; // Vissza az eredeti oszlopszám
     tbody.innerHTML = `
       <tr>
         <td colspan="${colCount}" style="text-align: center; color: #e53e3e; padding: 20px;">

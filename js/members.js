@@ -146,7 +146,8 @@ async function loadTags() {
         }).map(tag => ({
             id: tag.id,
             name: tag.name,
-            rank: tag.rank
+            rank: tag.rank,
+            created_at: tag.created_at // Hozzáadva a dátum
         }));
         
         renderTags(sortedTags);
@@ -165,7 +166,7 @@ function renderTags(tags) {
         tbody.innerHTML = '';
         
         if (!tags || tags.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="empty-table-message">Nincs megjeleníthető tag</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-table-message">Nincs megjeleníthető tag</td></tr>';
             return;
         }
         
@@ -175,39 +176,21 @@ function renderTags(tags) {
             const rankIcon = getRankIcon(tag.rank);
             const rankDisplay = tag.rank ? `${rankIcon} ${escapeHtml(tag.rank)}` : 'Nincs rang';
             
+            // Dátum formázása
+            let dateDisplay = '-';
+            if (tag.created_at) {
+                const date = new Date(tag.created_at);
+                dateDisplay = date.toLocaleDateString('hu-HU', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
+            
             let actionCell = '';
             if (currentUser && currentUser.role === 'admin') {
                 // CSAK ADMIN LÁTHATJA A MŰVELET GOMBOKAT
                 let actionButtons = '';
-                
-                actionButtons += `
-                    <select onchange="updateTagRank('${escapeHtml(tag.name).replace(/'/g, "\\'")}', this.value)" 
-                            class="modern-input" style="padding: 8px; font-size: 0.85em; min-width: 140px; margin-bottom: 5px;">
-                        <option value="">Válassz rangot...</option>
-                        <option value="Owner" ${tag.rank === 'Owner' ? 'selected' : ''}>Owner</option>
-                        <option value="Co-Owner" ${tag.rank === 'Co-Owner' ? 'selected' : ''}>Co-Owner</option>
-                        <option value="Manager" ${tag.rank === 'Manager' ? 'selected' : ''}>Manager</option>
-                        <option value="Team Leader" ${tag.rank === 'Team Leader' ? 'selected' : ''}>Team Leader</option>
-                        <option value="Top Salesman" ${tag.rank === 'Top Salesman' ? 'selected' : ''}>Top Salesman</option>
-                        <option value="Sr. Salesman" ${tag.rank === 'Sr. Salesman' ? 'selected' : ''}>Sr. Salesman</option>
-                        <option value="Jr. Salesman" ${tag.rank === 'Jr. Salesman' ? 'selected' : ''}>Jr. Salesman</option>
-                        <option value="Towing Specialist" ${tag.rank === 'Towing Specialist' ? 'selected' : ''}>Towing Specialist</option>
-                        <option value="Tow Operator" ${tag.rank === 'Tow Operator' ? 'selected' : ''}>Tow Operator</option>
-                        <option value="Truck Driver" ${tag.rank === 'Truck Driver' ? 'selected' : ''}>Truck Driver</option>
-                        <option value="Member" ${tag.rank === 'Member' ? 'selected' : ''}>Member</option>
-                    </select>
-                    <button class="modern-btn-kick" onclick="openKickModal('${escapeHtml(tag.name).replace(/'/g, "\\'")}')">
-                        🚫 Kirúgás
-                    </button>
-                `;
-                
-                actionCell = `
-                    <td class="action-cell">
-                        <div class="modern-action-buttons">
-                            ${actionButtons}
-                        </div>
-                    </td>
-                `;
             } else {
                 // NEM ADMIN VAGY NINCS BEJELENTKEZVE - ÜRES CELL (de nem fehér karika)
                 actionCell = '<td style="display: none;"></td>';
@@ -216,6 +199,7 @@ function renderTags(tags) {
             row.innerHTML = `
                 <td style="font-weight: 600; color: #2d3748;">${escapeHtml(tag.name)}</td>
                 <td style="color: #4a5568;">${rankDisplay}</td>
+                <td style="color: #718096; font-size: 0.9em;">${dateDisplay}</td>
                 ${actionCell}
             `;
             tbody.appendChild(row);

@@ -38,9 +38,9 @@ function renderTunings(tunings) {
     tunings.forEach(tuning => {
         const row = document.createElement('tr');
         
-        // Árak formázása
-        const dollarAr = tuning.price ? new Intl.NumberFormat('hu-HU').format(tuning.price) + ' $' : '-';
+        // Árak formázása - MEGCSERÉLVE: PP előbb, $ utána
         const ppAr = tuning.pp_price ? new Intl.NumberFormat('hu-HU').format(tuning.pp_price) + ' PP' : '-';
+        const dollarAr = tuning.price ? new Intl.NumberFormat('hu-HU').format(tuning.price) + ' $' : '-';
         
         // MŰVELET GOMBOK - CSAK ADMINOKNAK
         let actionCell = '';
@@ -48,6 +48,9 @@ function renderTunings(tunings) {
             actionCell = `
                 <td class="action-cell">
                     <div class="modern-action-buttons">
+                        <button class="modern-btn-sold" onclick="openEditTuningModal(${tuning.id})">
+                            ✏️ Ár módosítás
+                        </button>
                         <button class="modern-btn-delete" onclick="deleteTuning(${tuning.id})">❌ Törlés</button>
                     </div>
                 </td>
@@ -58,8 +61,8 @@ function renderTunings(tunings) {
         
         row.innerHTML = `
             <td style="font-weight: 600; color: #2d3748;">${escapeHtml(tuning.name || '')}</td>
-            <td class="price-cell price-sale">${dollarAr}</td>
             <td class="price-cell" style="color: #805ad5; font-weight: 700;">${ppAr}</td>
+            <td class="price-cell price-sale">${dollarAr}</td>
             ${actionCell}
         `;
         
@@ -134,5 +137,110 @@ async function deleteTuning(tuningId) {
     } catch (error) {
         console.error('deleteTuning hiba:', error);
         showTuningMessage('Hiba történt a törlés során', 'error');
+    }
+}
+
+// === TUNING ÁR MÓDOSÍTÁS FUNKCIÓK ===
+
+// Tuning ár módosítás modal megnyitása
+async function openEditTuningModal(tuningId) {
+    try {
+        if (!checkAdminAccess()) return;
+
+        // Tuning adatainak betöltése
+        const { data: tuning, error } = await supabase
+            .from('tuning_options')
+            .select('*')
+            .eq('id', tuningId)
+            .single();
+
+        if (error || !tuning) {
+            showTuningMessage('Tuning csomag nem található!', 'error');
+            return;
+        }
+
+        // Modal tartalom feltöltése
+        document.getElementById('editTuningId').value = tuningId;
+        document.getElementById('editTuningName').textContent = tuning.name || 'Ismeretlen tuning';
+        
+        // Árak formázása
+        const currentPP = tuning.pp_price ? new Intl.NumberFormat('hu-HU').format(tuning.pp_price) : '';
+        const currentDollar = tuning.price ? new Intl.NumberFormat('hu-HU').format(tuning.price) : '';
+        
+        document.getElementById('editTuningPPPrice').value = currentPP;
+        document.getElementById('editTuningPrice').value = currentDollar;
+
+        // Modal megjelenítése
+        document.getElementById('editTuningModal').style.display = 'block';
+        
+        // Input fókusz
+        setTimeout(() => {
+            document.getElementById('editTuningPPPrice').focus();
+        }, 300);
+        
+    } catch (error) {
+        console.error('openEditTuningModal hiba:', error);
+        showTuningMessage('Hiba történt a tuning betöltése során', 'error');
+    }
+}
+
+// Tuning ár módosítás modal bezárása
+function closeEditTuningModal() {
+    document.getElementById('editTuningModal').style.display = 'none';
+}
+
+// Tuning ár módosítás mentése
+async function saveTuningPrice() {
+    try {
+        if (!checkAdminAccess()) return;
+
+        const tuningId = document.getElementById('editTuningId').value;
+        const newPPPrice = document.getElementById('editTuningPPPrice').value.replace(/[^\d]/g, '');
+        const newPrice = document.getElementById('editTuningPrice').value.replace(/[^\d]/g, '');
+        
+        if (!tuningId) {
+            showTuningMessage('Tuning azonosító hiányzik!', 'error');
+            return;
+        }
+        
+        // Legalább egy ár megadása kötelező
+        if (!newPPPrice && !newPrice) {
+            showTuningMessage('Add meg legalább egy árat ($ vagy PP)!', 'warning');
+            return;
+        }
+
+        const updateData = {};
+        // Csak az árakat frissítjük, nem kell updated_by és updated_at
+
+        // Csak akkor adjuk hozzá az árat, ha meg van adva
+        if (newPPPrice) {
+            updateData.pp_price = parseInt(newPPPrice);
+        } else {
+            updateData.pp_price = null;
+        }
+
+        if (newPrice) {
+            updateData.price = parseInt(newPrice);
+        } else {
+            updateData.price = null;
+        }
+
+        // Ár frissítése
+        const { error } = await supabase
+            .from('tuning_options')
+            .update(updateData)
+            .eq('id', tuningId);
+
+        if (error) {
+            showTuningMessage('Hiba történt az ár módosítása során: ' + error.message, 'error');
+        } else {
+            showTuningMessage('✅ Tuning árak sikeresen módosítva!', 'success');
+            closeEditTuningModal();
+            loadTunings(); // Frissítjük a táblázatot
+        }
+        
+    } catch (error) {
+        console.error('saveTuningPrice hiba:', error);
+        showTuningMessage('Hiba történt az ár módosítása során', 'error');
     }
 }

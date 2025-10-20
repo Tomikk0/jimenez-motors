@@ -29,7 +29,7 @@ function renderCarGallery(cars) {
   if (!cars || cars.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" class="empty-table-message">
+        <td colspan="6" class="empty-table-message">
           🚗 Nincsenek megjeleníthető autók a galériában<br>
           <small style="opacity: 0.7;">Adj hozzá egy új autót a fenti űrlappal!</small>
         </td>
@@ -42,6 +42,8 @@ function renderCarGallery(cars) {
   
   cars.forEach(car => {
     const row = document.createElement('tr');
+    row.setAttribute('data-car-id', car.id);
+    row.setAttribute('data-car-model', car.model || '');
     
     // KÉP RÉSZ
     let imageHtml = '';
@@ -72,8 +74,9 @@ function renderCarGallery(cars) {
       `;
     }
     
-    // ÁR - szerkeszthető input mező
-    const ar = car.sale_price ? new Intl.NumberFormat('hu-HU').format(car.sale_price) + ' $' : '-';
+    // ÁRAK
+    const baseAr = car.base_price ? new Intl.NumberFormat('hu-HU').format(car.base_price) + ' $' : '-';
+    const eladasiAr = car.sale_price ? new Intl.NumberFormat('hu-HU').format(car.sale_price) + ' $' : '-';
     
     // MŰVELET GOMBOK
     let actionCell = '';
@@ -84,7 +87,7 @@ function renderCarGallery(cars) {
       
       // ÁR MÓDOSÍTÁS gomb
       buttonsHtml += `
-        <button class="modern-btn-sold" onclick="openEditGalleryPriceModal(${car.id}, ${car.sale_price || 0})">
+        <button class="modern-btn-sold" onclick="openEditGalleryPriceModalWithModel(${car.id}, ${car.base_price || 0}, ${car.sale_price || 0}, '${car.model ? car.model.replace(/'/g, "\\'") : ''}')">
           ✏️ Ár módosítás
         </button>
       `;
@@ -108,12 +111,35 @@ function renderCarGallery(cars) {
     row.innerHTML = `
       ${imageHtml}
       <td style="font-weight: 600; color: #2d3748;">${escapeHtml(car.model || '')}</td>
-      <td class="price-cell price-sale" id="price-${car.id}">${ar}</td>
+      <td class="price-cell price-desired">${baseAr}</td>
+      <td class="price-cell price-sale" id="price-${car.id}">${eladasiAr}</td>
       ${actionCell}
     `;
     
     tbody.appendChild(row);
   });
+}
+
+// Új segédfüggvény a model név átadásához
+function openEditGalleryPriceModalWithModel(carId, currentBasePrice, currentSalePrice, modelName) {
+  // Modal tartalom feltöltése
+  document.getElementById('editGalleryCarId').value = carId;
+  document.getElementById('editGalleryCarModel').textContent = modelName || 'Ismeretlen modell';
+  
+  // Árak formázása
+  const formattedBasePrice = currentBasePrice ? new Intl.NumberFormat('hu-HU').format(currentBasePrice) : '';
+  const formattedSalePrice = currentSalePrice ? new Intl.NumberFormat('hu-HU').format(currentSalePrice) : '';
+  
+  document.getElementById('editGalleryBasePrice').value = formattedBasePrice;
+  document.getElementById('editGalleryPrice').value = formattedSalePrice;
+  
+  // Modal megjelenítése
+  document.getElementById('editGalleryPriceModal').style.display = 'block';
+  
+  // Input fókusz
+  setTimeout(() => {
+    document.getElementById('editGalleryBasePrice').focus();
+  }, 300);
 }
 
 async function addGalleryCar() {
@@ -124,6 +150,7 @@ async function addGalleryCar() {
     }
 
     const model = document.getElementById('galleryModelSearch').value.trim();
+    const basePrice = document.getElementById('galleryBasePrice').value.replace(/[^\d]/g, '');
     const price = document.getElementById('galleryPrice').value.replace(/[^\d]/g, '');
 
     if (!model) {
@@ -132,7 +159,7 @@ async function addGalleryCar() {
     }
 
     if (!price) {
-      showGalleryMessage('Add meg az árat!', 'warning');
+      showGalleryMessage('Add meg az eladási árat!', 'warning');
       return;
     }
 
@@ -144,6 +171,7 @@ async function addGalleryCar() {
 
     const carData = {
       model: model,
+      base_price: basePrice ? parseInt(basePrice) : null, // Új alap ár mező
       sale_price: parseInt(price),
       added_by: currentUser.tagName,
       image_data_url: imageDataUrl, // Ez lehet null is
@@ -174,33 +202,42 @@ async function addGalleryCar() {
   }
 }
 
-// ÚJ: Ár módosítás modal megnyitása
-function openEditGalleryPriceModal(carId, currentPrice) {
+// Ár módosítás modal megnyitása
+function openEditGalleryPriceModal(carId, currentBasePrice, currentSalePrice) {
   if (!currentUser) {
     showGalleryMessage('Bejelentkezés szükséges!', 'warning');
     return;
   }
 
-  // Aktuális autó adatainak betöltése
-  const car = allCars.find(c => c.id === carId) || {};
+  // Keressük meg a táblázat sorát és a modell nevét
+  const row = document.querySelector(`tr:has(td:nth-child(2):contains("${carId}")`);
+  let modelName = 'Ismeretlen modell';
   
+  // Ha nem találjuk a sort, próbáljuk meg máshogy
+  const modelCell = document.querySelector(`tr td:nth-child(2)`);
+  if (modelCell) {
+    modelName = modelCell.textContent || 'Ismeretlen modell';
+  }
+
   // Modal tartalom feltöltése
   document.getElementById('editGalleryCarId').value = carId;
-  document.getElementById('editGalleryCarModel').textContent = car.model || 'Ismeretlen modell';
+  document.getElementById('editGalleryCarModel').textContent = modelName;
   
-  // Ár formázása
-  const formattedPrice = currentPrice ? new Intl.NumberFormat('hu-HU').format(currentPrice) : '';
-  document.getElementById('editGalleryPrice').value = formattedPrice;
+  // Árak formázása
+  const formattedBasePrice = currentBasePrice ? new Intl.NumberFormat('hu-HU').format(currentBasePrice) : '';
+  const formattedSalePrice = currentSalePrice ? new Intl.NumberFormat('hu-HU').format(currentSalePrice) : '';
+  
+  document.getElementById('editGalleryBasePrice').value = formattedBasePrice;
+  document.getElementById('editGalleryPrice').value = formattedSalePrice;
   
   // Modal megjelenítése
   document.getElementById('editGalleryPriceModal').style.display = 'block';
   
   // Input fókusz
   setTimeout(() => {
-    document.getElementById('editGalleryPrice').focus();
+    document.getElementById('editGalleryBasePrice').focus();
   }, 300);
 }
-
 // ÚJ: Ár módosítás modal bezárása
 function closeEditGalleryPriceModal() {
   document.getElementById('editGalleryPriceModal').style.display = 'none';

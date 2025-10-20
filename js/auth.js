@@ -157,6 +157,11 @@ function updateUIForLoginState() {
     btn.style.display = isLoggedIn ? 'inline-block' : 'none';
   });
   
+  const tagAdminButton = document.getElementById('tagAdminButton');
+  if (tagAdminButton) {
+    tagAdminButton.style.display = isAdminUser ? 'flex' : 'none';
+  }
+
   document.querySelectorAll('.login-btn').forEach(btn => {
     if (isLoggedIn) {
       btn.innerHTML = '🚪 Kijelentkezés (' + currentUser.tagName + ')';

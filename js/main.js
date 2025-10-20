@@ -4,9 +4,16 @@ function showPage(pageName) {
     console.log('🔄 Oldalváltás:', pageName);
     
     // Ellenőrizzük, hogy az oldal elérhető-e
-    if ((pageName === 'statisztika' || pageName === 'autokKepek' || pageName === 'tuningok') && !currentUser) {
+    const adminPages = ['statisztika', 'autokKepek', 'tuningok', 'eladottAutok', 'tagAdmin'];
+    if (adminPages.includes(pageName) && !currentUser) {
       console.log('🚫 Oldal nem elérhető, vissza autókra');
       pageName = 'autok';
+    }
+    
+    // Tag Admin oldal csak adminoknak
+    if (pageName === 'tagAdmin' && (!currentUser || currentUser.role !== 'admin')) {
+      console.log('🚫 Tag Admin csak adminoknak');
+      pageName = 'tagok';
     }
     
     // Összes oldal elrejtése
@@ -35,21 +42,16 @@ function showPage(pageName) {
       allActiveButtons.forEach(btn => {
         btn.classList.add('active');
       });
-      
-      // Login oldal speciális kezelése
-      if (pageName === 'login') {
-        setTimeout(() => {
-          setupEnterKeyListener();
-          const usernameInput = document.getElementById('username');
-          if (usernameInput) usernameInput.focus();
-        }, 100);
-      }
     }
     
     switch(pageName) {
       case 'autok':
         console.log('🚗 Autók betöltése...');
         loadCars();
+        break;
+      case 'eladottAutok':
+        console.log('✅ Eladott autók betöltése...');
+        loadSoldCars();
         break;
       case 'autokKepek':
         console.log('🖼️ Autó képek betöltése...');
@@ -62,6 +64,10 @@ function showPage(pageName) {
       case 'tagok':
         console.log('👥 Tagok betöltése...');
         loadTags();
+        break;
+      case 'tagAdmin':
+        console.log('👑 Tag Admin betöltése...');
+        loadTagAdminData();
         break;
       case 'statisztika':
         console.log('📊 Statisztika betöltése...');
@@ -327,7 +333,6 @@ async function loadCarGallery() {
     const { data: cars, error } = await supabase
       .from('cars')
       .select('*')
-      .eq('is_gallery', true)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
