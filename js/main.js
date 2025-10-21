@@ -1,3 +1,151 @@
+// === JAVÍTOTT HALLOWEEN THEME FUNKCIÓK ===
+
+// Halloween theme toggle
+function toggleHalloweenTheme() {
+    const body = document.body;
+    const isHalloween = body.classList.contains('halloween-theme');
+    
+    if (isHalloween) {
+        body.classList.remove('halloween-theme');
+        localStorage.setItem('halloweenTheme', 'false');
+        removeHalloweenDecorations();
+        console.log('🎃 Halloween theme kikapcsolva');
+    } else {
+        body.classList.add('halloween-theme');
+        localStorage.setItem('halloweenTheme', 'true');
+        addHalloweenDecorations();
+        console.log('🎃 Halloween theme bekapcsolva');
+    }
+}
+
+// Halloween dekorációk hozzáadása
+function addHalloweenDecorations() {
+    if (!document.body.classList.contains('halloween-theme')) return;
+    if (document.querySelector('.halloween-decoration')) return;
+    
+    const decorations = ['🎃', '👻', '🦇', '🕷️', '🕸️', '💀'];
+    const body = document.body;
+    
+    for (let i = 0; i < 15; i++) {
+        const deco = document.createElement('div');
+        deco.className = 'halloween-decoration halloween-float';
+        deco.textContent = decorations[Math.floor(Math.random() * decorations.length)];
+        deco.style.left = Math.random() * 100 + 'vw';
+        deco.style.top = Math.random() * 100 + 'vh';
+        deco.style.fontSize = (Math.random() * 2 + 1) + 'em';
+        deco.style.opacity = Math.random() * 0.3 + 0.1;
+        deco.style.animationDelay = Math.random() * 5 + 's';
+        body.appendChild(deco);
+    }
+}
+
+// Dekorációk eltávolítása
+function removeHalloweenDecorations() {
+    const decorations = document.querySelectorAll('.halloween-decoration');
+    decorations.forEach(deco => {
+        deco.remove();
+    });
+}
+
+// Halloween theme betöltése
+function loadHalloweenTheme() {
+    const savedTheme = localStorage.getItem('halloweenTheme');
+    if (savedTheme === 'true') {
+        document.body.classList.add('halloween-theme');
+        console.log('🎃 Halloween theme betöltve');
+    }
+}
+
+// Toggle gomb hozzáadása
+function addHalloweenToggle() {
+    if (document.querySelector('.halloween-toggle')) return;
+    
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'halloween-toggle';
+    toggleBtn.innerHTML = '🎃';
+    toggleBtn.title = 'Halloween Theme Kapcsoló';
+    toggleBtn.onclick = toggleHalloweenTheme;
+    document.body.appendChild(toggleBtn);
+}
+
+// Halloween theme alkalmazása minden elemre
+function applyHalloweenThemeToAllElements() {
+    if (document.body.classList.contains('halloween-theme')) {
+        const allElements = document.querySelectorAll('*');
+        
+        allElements.forEach(element => {
+            const computedStyle = window.getComputedStyle(element);
+            
+            const bgColor = computedStyle.backgroundColor;
+            if (bgColor && (bgColor.includes('255, 255, 255') || bgColor === 'white' || bgColor === '#ffffff')) {
+                element.style.backgroundColor = 'transparent';
+            }
+            
+            const textColor = computedStyle.color;
+            if (textColor && (textColor.includes('0, 0, 0') || textColor === 'black' || textColor === '#000000')) {
+                element.style.color = '#e2e8f0';
+            }
+        });
+    }
+}
+
+// === CSAK EGY OBSERVER ===
+const halloweenObserver = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        // Theme változás figyelése
+        if (mutation.attributeName === 'class') {
+            if (document.body.classList.contains('halloween-theme')) {
+                setTimeout(addHalloweenDecorations, 100);
+            } else {
+                removeHalloweenDecorations();
+            }
+        }
+        
+        // Új elemek figyelése
+        if (mutation.addedNodes.length) {
+            setTimeout(applyHalloweenThemeToAllElements, 100);
+        }
+    });
+});
+
+// Observer indítása
+halloweenObserver.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['class'],
+    childList: true,
+    subtree: true
+});
+
+// Inicializálás
+document.addEventListener('DOMContentLoaded', function() {
+    addHalloweenToggle();
+    loadHalloweenTheme();
+    
+    // Dekorációk késleltetett hozzáadása
+    setTimeout(() => {
+        if (document.body.classList.contains('halloween-theme')) {
+            addHalloweenDecorations();
+        }
+        applyHalloweenThemeToAllElements();
+    }, 500);
+});
+
+// Theme alkalmazása oldal betöltésekor és minden DOM változásnál
+document.addEventListener('DOMContentLoaded', applyHalloweenThemeToAllElements);
+
+// MutationObserver a dinamikus elemekhez
+const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+        if (mutation.addedNodes.length) {
+            applyHalloweenThemeToAllElements();
+        }
+    });
+});
+
+observer.observe(document.body, {
+    childList: true,
+    subtree: true
+});
 // === OLDAL KEZELÉS ===
 function showPage(pageName) {
   try {
