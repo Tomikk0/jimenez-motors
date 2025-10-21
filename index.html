@@ -138,10 +138,11 @@
     <button class="nav-btn login-btn" onclick="showPage('login')">🔐 Bejelentkezés</button>
   </nav>
 
-  <div class="page-header-center">
-    <h2>✅ Eladott Autók</h2>
-    <p>Az összes korábban eladott autó listája</p>
-  </div>
+    <div class="modern-form-card">
+      <div class="modern-form-header">
+        <h2>✅ Eladott Autók</h2>
+      </div>
+      
 
   <div id="soldCarsMessage" class="message"></div>
 
@@ -167,6 +168,7 @@
     </table>
   </div>
 </div>
+</div>
 <!-- TAGOK OLDAL -->
 <div id="tagokPage" class="page">
   <nav class="main-nav">
@@ -179,11 +181,14 @@
     <button class="nav-btn password-btn" onclick="openChangePasswordModal()" style="display: none;">🔐 Jelszó</button>
     <button class="nav-btn login-btn" onclick="showPage('login')">🔐 Bejelentkezés</button>
   </nav>
-
+    <div class="modern-form-card">
+      <div class="modern-form-header">
+              <h2>👥 Tagok</h2>
+      <p>Jimenez Motors csapattagjai</p>
+      </div>
+  
   <div class="form-header-with-filters">
     <div class="form-title">
-      <h2>👥 Tagok</h2>
-      <p>Jimenez Motors csapattagjai</p>
     </div>
     <div class="compact-filters-row">
       <button id="historyButton" class="modern-btn-secondary" onclick="showKickedMembersHistory()">
