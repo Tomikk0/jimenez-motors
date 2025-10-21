@@ -1,51 +1,97 @@
-// === MODAL FUNKCIÓK ===
+// DEBUG: Ellenőrizzük, hogy a függvények elérhetőek-e
+console.log('✅ modals.js betöltődött');
 
-// Eladás modal
+// Eladás modal bezárása
+function closeEditModal() {
+  console.log('🔒 closeEditModal meghívva');
+  const modal = document.getElementById('editSaleModal');
+  if (modal) {
+    modal.style.display = 'none';
+    console.log('✅ Modal elrejtve');
+  } else {
+    console.error('❌ editSaleModal nem található');
+  }
+  currentCarIdForSale = null;
+}
+
+// Eladás modal megnyitása - JAVÍTOTT VERZIÓ
 function openSoldModal(carId) {
+  console.log('🚗 openSoldModal meghívva, carId:', carId);
+  
   const car = allCars.find(c => c.id === carId);
-  if (!car) return;
+  if (!car) {
+    console.error('❌ Autó nem található:', carId);
+    return;
+  }
 
   currentCarIdForSale = carId;
   
+  // Modal elem lekérése
+  const modal = document.getElementById('editSaleModal');
+  if (!modal) {
+    console.error('❌ editSaleModal elem nem található');
+    return;
+  }
+  
   // Kép beállítása
   const carImage = document.getElementById('editCarImage');
-  const imageUrl = getImageUrl(car.image_url || car.image_data_url);
-  if (imageUrl && !imageUrl.includes('undefined')) {
-    carImage.src = imageUrl;
-    carImage.style.display = 'block';
-  } else {
-    carImage.style.display = 'none';
+  if (carImage) {
+    const imageUrl = getImageUrl(car.image_url || car.image_data_url);
+    if (imageUrl && !imageUrl.includes('undefined')) {
+      carImage.src = imageUrl;
+      carImage.style.display = 'block';
+      console.log('✅ Kép beállítva:', imageUrl);
+    } else {
+      carImage.style.display = 'none';
+      console.log('ℹ️ Nincs kép');
+    }
   }
   
   // Autó adatok
-  document.getElementById('editCarModel').textContent = car.Model || 'Ismeretlen modell';
-  document.getElementById('editPurchasePrice').textContent = car.VetelArFormatted ? car.VetelArFormatted + ' $' : 'Nincs megadva';
-  document.getElementById('editCurrentPrice').textContent = car.EladasiArFormatted ? car.EladasiArFormatted + ' $' : 'Nincs megadva';
+  const modelElement = document.getElementById('editCarModel');
+  const purchasePriceElement = document.getElementById('editPurchasePrice');
+  const currentPriceElement = document.getElementById('editCurrentPrice');
+  
+  if (modelElement) modelElement.textContent = car.Model || 'Ismeretlen modell';
+  if (purchasePriceElement) purchasePriceElement.textContent = car.VetelArFormatted ? car.VetelArFormatted + ' $' : 'Nincs megadva';
+  if (currentPriceElement) currentPriceElement.textContent = car.EladasiArFormatted ? car.EladasiArFormatted + ' $' : 'Nincs megadva';
   
   // Eladási ár input
-  document.getElementById('editSalePrice').value = car.EladasiArFormatted || '';
+  const salePriceInput = document.getElementById('editSalePrice');
+  if (salePriceInput) {
+    salePriceInput.value = car.EladasiArFormatted || '';
+  }
+  
+  // Eladás típus alaphelyzetbe állítása
+  const kpRadio = document.getElementById('saleTypeKp');
+  const normalRadio = document.getElementById('saleTypeNormal');
+  if (kpRadio) kpRadio.checked = true;
+  if (normalRadio) normalRadio.checked = false;
   
   // Profit számoló frissítése
   updateProfitCalculator();
   
-  // Modal megjelenítése
-  document.getElementById('editSaleModal').style.display = 'block';
+  // Modal megjelenítése - MÓDOSÍTOTT
+  modal.style.display = 'block';
+  modal.style.opacity = '1';
+  modal.style.visibility = 'visible';
+  
+  console.log('✅ Modal megjelenítve');
   
   // Input fókusz
   setTimeout(() => {
-    document.getElementById('editSalePrice').focus();
+    if (salePriceInput) {
+      salePriceInput.focus();
+      console.log('✅ Input fókusz beállítva');
+    }
   }, 300);
 }
 
-function closeEditModal() {
-  document.getElementById('editSaleModal').style.display = 'none';
-  currentCarIdForSale = null;
-}
-
-// Profit számoló frissítése
+// Profit számoló frissítése - MÓDOSÍTOTT
 function updateProfitCalculator() {
   const salePriceInput = document.getElementById('editSalePrice').value.replace(/[^\d]/g, '');
   const salePrice = salePriceInput ? parseInt(salePriceInput) : 0;
+  const saleType = document.querySelector('input[name="saleType"]:checked').value;
   
   const car = allCars.find(c => c.id === currentCarIdForSale);
   const purchasePrice = car.VetelAr || 0;
@@ -53,12 +99,33 @@ function updateProfitCalculator() {
   const profitCalc = document.getElementById('profitCalc');
   
   if (salePrice > 0 && purchasePrice > 0) {
-    const profit = salePrice - purchasePrice;
+    // Adó számítás: normál eladás esetén 7.5% adó
+    const taxRate = saleType === 'normal' ? 0.075 : 0;
+    const taxAmount = Math.round(salePrice * taxRate);
+    const netSalePrice = salePrice - taxAmount;
+    const profit = netSalePrice - purchasePrice;
+    
     const profitFormatted = new Intl.NumberFormat('hu-HU').format(Math.abs(profit));
     const profitClass = profit >= 0 ? 'profit-positive' : 'profit-negative';
     
     document.getElementById('calcPurchase').textContent = new Intl.NumberFormat('hu-HU').format(purchasePrice) + ' $';
     document.getElementById('calcSale').textContent = new Intl.NumberFormat('hu-HU').format(salePrice) + ' $';
+    
+    // Adó megjelenítése, ha van
+    if (taxAmount > 0) {
+      document.getElementById('calcTax').textContent = new Intl.NumberFormat('hu-HU').format(taxAmount) + ' $';
+      document.getElementById('calcTax').style.display = 'block';
+      document.getElementById('taxLabel').style.display = 'block';
+      document.getElementById('calcNetSale').textContent = new Intl.NumberFormat('hu-HU').format(netSalePrice) + ' $';
+      document.getElementById('calcNetSale').style.display = 'block';
+      document.getElementById('netSaleLabel').style.display = 'block';
+    } else {
+      document.getElementById('calcTax').style.display = 'none';
+      document.getElementById('taxLabel').style.display = 'none';
+      document.getElementById('calcNetSale').style.display = 'none';
+      document.getElementById('netSaleLabel').style.display = 'none';
+    }
+    
     document.getElementById('calcProfit').textContent = (profit >= 0 ? '+' : '-') + profitFormatted + ' $';
     document.getElementById('calcProfit').className = profitClass;
     
@@ -73,6 +140,7 @@ async function confirmSaleWithEdit() {
 
   const salePriceInput = document.getElementById('editSalePrice').value.replace(/[^\d]/g, '');
   const salePriceValue = salePriceInput ? parseInt(salePriceInput) : null;
+  const saleType = document.querySelector('input[name="saleType"]:checked').value;
 
   if (salePriceValue !== null && isNaN(salePriceValue)) {
     showMessage('Érvényes számot adj meg!', 'error');
@@ -87,13 +155,21 @@ async function confirmSaleWithEdit() {
     if (!confirmLoss) return;
   }
 
+  // Adó számítás
+  const taxRate = saleType === 'normal' ? 0.075 : 0;
+  const taxAmount = salePriceValue ? Math.round(salePriceValue * taxRate) : 0;
+  const netSalePrice = salePriceValue ? salePriceValue - taxAmount : null;
+
   const { error } = await supabase
     .from('cars')
     .update({ 
       sold: true,
       sold_by: currentUser.tagName,
       sold_at: new Date().toISOString(),
-      sale_price: salePriceValue
+      sale_price: salePriceValue,
+      sale_type: saleType, // Eladás típus mentése
+      tax_amount: taxAmount, // Adó összege
+      net_sale_price: netSalePrice // Nettó eladási ár
     })
     .eq('id', currentCarIdForSale);
 
@@ -101,14 +177,16 @@ async function confirmSaleWithEdit() {
     showMessage('Hiba: ' + error.message, 'error');
   } else {
     const priceInfo = salePriceValue ? ` (${new Intl.NumberFormat('hu-HU').format(salePriceValue)} $)` : '';
-    showMessage(`✅ Autó eladva${priceInfo}! (Eladó: ${currentUser.tagName})`, 'success');
+    const taxInfo = taxAmount > 0 ? ` - Adó: ${new Intl.NumberFormat('hu-HU').format(taxAmount)} $` : '';
+    const saleTypeText = saleType === 'kp' ? 'Készpénz' : 'Normál';
+    
+    showMessage(`✅ Autó eladva${priceInfo}${taxInfo} (${saleTypeText} - Eladó: ${currentUser.tagName})`, 'success');
     loadCars();
     loadStats();
   }
 
   closeEditModal();
 }
-
 // === JELSZÓVÁLTOZTATÁS FUNKCIÓK ===
 
 // Jelszóváltoztatás modal megnyitása

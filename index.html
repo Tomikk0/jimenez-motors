@@ -853,10 +853,31 @@
       </div>
 
       <div class="sale-form">
+        <!-- Eladás típus választás -->
         <div class="form-group">
-          <label for="editSalePrice">💵 Új eladási ár</label>
+          <label>💰 Eladás típusa</label>
+          <div class="sale-type-selector" style="display: flex; gap: 15px; margin-top: 10px;">
+            <label class="sale-type-option" style="flex: 1;">
+              <input type="radio" name="saleType" value="kp" id="saleTypeKp" checked onchange="updateProfitCalculator()">
+              <div class="sale-type-card" style="padding: 15px; border: 2px solid #48bb78; border-radius: 10px; text-align: center; cursor: pointer; background: #f0fff4;">
+                <div style="font-size: 1.2em; font-weight: bold; color: #48bb78;">💵 Készpénz</div>
+                <div style="font-size: 0.9em; color: #718096; margin-top: 5px;">Nincs adó</div>
+              </div>
+            </label>
+            <label class="sale-type-option" style="flex: 1;">
+              <input type="radio" name="saleType" value="normal" id="saleTypeNormal" onchange="updateProfitCalculator()">
+              <div class="sale-type-card" style="padding: 15px; border: 2px solid #ed8936; border-radius: 10px; text-align: center; cursor: pointer; background: #fffaf0;">
+                <div style="font-size: 1.2em; font-weight: bold; color: #ed8936;">🏪 Normál</div>
+                <div style="font-size: 0.9em; color: #718096; margin-top: 5px;">-7.5% adó</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="editSalePrice">💵 Eladási ár</label>
           <div class="price-input-container">
-            <input type="text" id="editSalePrice" placeholder="0" maxlength="15">
+            <input type="text" id="editSalePrice" placeholder="0" maxlength="15" oninput="formatInputPrice(this); updateProfitCalculator();">
           </div>
           <div class="price-hint">Írd be az árat, automatikusan formázódik</div>
         </div>
@@ -870,6 +891,14 @@
           <div class="profit-row">
             <span>Eladási ár:</span>
             <span id="calcSale">0 $</span>
+          </div>
+          <div class="profit-row" id="taxLabel" style="display: none;">
+            <span>Adó (7.5%):</span>
+            <span id="calcTax" style="color: #e53e3e;">0 $</span>
+          </div>
+          <div class="profit-row" id="netSaleLabel" style="display: none;">
+            <span>Nettó ár:</span>
+            <span id="calcNetSale">0 $</span>
           </div>
           <div class="profit-row total">
             <span>Eredmény:</span>

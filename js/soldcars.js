@@ -8,7 +8,7 @@ async function loadSoldCars() {
       .select('*')
       .eq('is_gallery', false)
       .eq('sold', true)
-      .order('sold_at', { ascending: false }); // Legújabb eladások előre
+      .order('sold_at', { ascending: false });
     
     if (error) throw error;
     
@@ -44,8 +44,6 @@ function renderSoldCars(cars) {
     return;
   }
   
-  console.log('🎨 Eladott autók renderelése:', cars.length, 'autó');
-  
   cars.forEach(car => {
     const row = document.createElement('tr');
     row.classList.add('sold-row');
@@ -79,14 +77,28 @@ function renderSoldCars(cars) {
       `;
     }
     
-    // ÁRAK
+    // ÁRAK - MÓDOSÍTOTT: net_sale_price vagy sale_price megjelenítése
     const vetelAr = car.purchase_price ? new Intl.NumberFormat('hu-HU').format(car.purchase_price) + ' $' : '-';
-    const eladasiAr = car.sale_price ? new Intl.NumberFormat('hu-HU').format(car.sale_price) + ' $' : '-';
     
-    // PROFIT számolás
+    // Eladási ár megjelenítése - net_sale_price elsőbbsége
+    let eladasiAr = '-';
+    let eladasiArIkon = '';
+    
+    if (car.net_sale_price) {
+      // Ha van nettó ár (adóval csökkentett)
+      eladasiAr = new Intl.NumberFormat('hu-HU').format(car.net_sale_price) + ' $';
+      eladasiArIkon = '🏪'; // Normál eladás ikon
+    } else if (car.sale_price) {
+      // Ha csak sima sale_price van (készpénz)
+      eladasiAr = new Intl.NumberFormat('hu-HU').format(car.sale_price) + ' $';
+      eladasiArIkon = '💵'; // Készpénz ikon
+    }
+    
+    // PROFIT számolás - net_sale_price vagy sale_price alapján
     let profitHtml = '';
-    if (car.purchase_price && car.sale_price) {
-      const profit = car.sale_price - car.purchase_price;
+    if (car.purchase_price && (car.net_sale_price || car.sale_price)) {
+      const netPrice = car.net_sale_price || car.sale_price;
+      const profit = netPrice - car.purchase_price;
       const profitFormatted = new Intl.NumberFormat('hu-HU').format(Math.abs(profit));
       const profitClass = profit >= 0 ? 'profit-positive' : 'profit-negative';
       const profitIcon = profit >= 0 ? '📈' : '📉';
@@ -98,6 +110,27 @@ function renderSoldCars(cars) {
       `;
     } else {
       profitHtml = '<td class="price-cell price-hidden">-</td>';
+    }
+    
+    // ELADTA ÉS HOZZÁADTA OSZLOP
+    let eladtaCell = '';
+    if (car.sold_by || car.added_by) {
+      eladtaCell = `
+        <td style="color: #4a5568;">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div>
+              <div style="font-weight: 700; color: #2d3748;">👤 Eladta</div>
+              <div style="font-weight: 600; margin-top: 4px;">${escapeHtml(car.sold_by || '-')}</div>
+            </div>
+            <div>
+              <div style="font-weight: 700; color: #2d3748;">➕ Hozzáadta</div>
+              <div style="font-weight: 600; margin-top: 4px;">${escapeHtml(car.added_by || '-')}</div>
+            </div>
+          </div>
+        </td>
+      `;
+    } else {
+      eladtaCell = `<td style="color: #4a5568;">-</td>`;
     }
     
     // ELADÁS DÁTUMA
@@ -116,9 +149,12 @@ function renderSoldCars(cars) {
       <td style="font-weight: 600; color: #2d3748;">${escapeHtml(car.model || '')}</td>
       <td style="color: #718096; font-size: 0.9em;">${escapeHtml(car.tuning || '-')}</td>
       <td class="price-cell price-purchase">${vetelAr}</td>
-      <td class="price-cell price-sale">${eladasiAr}</td>
+      <td class="price-cell price-sale">
+        ${eladasiArIkon} ${eladasiAr}
+        ${car.tax_amount ? `<br><small style="color: #e53e3e; font-size: 0.8em;">Adó: ${new Intl.NumberFormat('hu-HU').format(car.tax_amount)} $</small>` : ''}
+      </td>
       ${profitHtml}
-      <td style="color: #4a5568; font-weight: 600;">${escapeHtml(car.sold_by || '-')}</td>
+      ${eladtaCell}
       <td style="color: #718096; font-size: 0.9em;">${soldDateHtml}</td>
     `;
     

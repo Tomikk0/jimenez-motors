@@ -613,3 +613,70 @@ body.halloween-theme [id*="tagok"] th {
     border-bottom: 2px solid #ff7518 !important;
     border-right: none !important;
 }
+/* === MODAL INPUT TÉRköZÖS JAVÍTÁS === */
+
+/* Ár input container javítása */
+.price-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.price-input-container::before {
+    content: '$';
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #667eea;
+    font-weight: bold;
+    font-size: 1.1em;
+    z-index: 2;
+    width: 20px;
+    text-align: center;
+}
+
+/* Input mező belső padding javítása */
+.price-input-container input {
+    width: 100%;
+    padding: 15px 15px 15px 45px !important; /* Több hely a $ jelnek */
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s;
+    box-sizing: border-box;
+    background: #f8fafc;
+    font-family: monospace; /* Rögzített szélességű betűtípus */
+    letter-spacing: 1px; /* Térköz a számok között */
+}
+
+.price-input-container input:focus {
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+/* Halloween theme speciális javítás */
+body.halloween-theme .price-input-container::before {
+    color: #ff7518 !important;
+    background: rgba(42, 21, 59, 0.9);
+    padding: 2px 6px;
+    border-radius: 4px;
+    left: 12px;
+}
+
+body.halloween-theme .price-input-container input {
+    padding: 15px 15px 15px 50px !important;
+    background: rgba(42, 21, 59, 0.8) !important;
+    border: 2px solid #8c52ff !important;
+    color: white !important;
+    font-family: monospace !important;
+    letter-spacing: 1px !important;
+}
+
+body.halloween-theme .price-input-container input:focus {
+    border-color: #ff7518 !important;
+    background: rgba(42, 21, 59, 0.9) !important;
+}
