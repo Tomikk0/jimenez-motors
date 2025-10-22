@@ -342,41 +342,8 @@
   box-shadow: 0 8px 25px rgba(237, 137, 54, 0.4);
 }
 
-.modern-btn-sold {
-  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 0.85em;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 2px 8px rgba(72, 187, 120, 0.3);
-}
 
-.modern-btn-sold:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
-}
 
-.modern-btn-delete {
-  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%) !important;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 0.85em;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3);
-}
-
-.modern-btn-delete:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
-}
 
 .modern-btn-kick {
   background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%) !important;
@@ -922,38 +889,7 @@
   display: none !important;
 }
 /* Tuning művelet gombok - EGYFORMA MÉRET */
-#tuningTableBody .modern-btn-sold,
-#tuningTableBody .modern-btn-delete {
-  padding: 8px 12px !important;
-  font-size: 0.8em !important;
-  min-width: unset !important;
-  width: auto !important;
-  margin: 0 2px !important;
-  display: inline-block !important;
-  height: 32px !important;
-  line-height: 1 !important;
-  white-space: nowrap !important;
-}
 
-#tuningTableBody .modern-btn-sold {
-  background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%) !important;
-  box-shadow: 0 2px 8px rgba(237, 137, 54, 0.3) !important;
-}
-
-#tuningTableBody .modern-btn-sold:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 15px rgba(237, 137, 54, 0.4) !important;
-}
-
-#tuningTableBody .modern-btn-delete {
-  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%) !important;
-  box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3) !important;
-}
-
-#tuningTableBody .modern-btn-delete:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4) !important;
-}
 
 #tuningTableBody .action-cell {
   padding: 8px 4px !important;

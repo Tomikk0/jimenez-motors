@@ -270,14 +270,7 @@
 }
 
 /* Kisebb törlés gombok a tuning táblázatban */
-#tuningTableBody .modern-btn-delete {
-  padding: 4px 8px !important;
-  font-size: 0.7em !important;
-  min-width: unset !important;
-  width: auto !important;
-  margin: 0 auto !important;
-  display: inline-block !important;
-}
+
 
 #tuningTableBody .action-cell {
   padding: 6px 4px !important;
@@ -291,13 +284,6 @@
 }
 @media (max-width: 768px) {
   /* Kisebb törlés gombok a tuning táblázatban */
-  #tuningTableBody .modern-btn-sold,
-  #tuningTableBody .modern-btn-delete {
-    padding: 6px 8px !important;
-    font-size: 0.7em !important;
-    margin: 0 1px !important;
-    height: 28px !important;
-  }
 
   #tuningTableBody .action-cell {
     padding: 6px 2px !important;

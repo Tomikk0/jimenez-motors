@@ -1561,21 +1561,4 @@ body.halloween-theme .image-container {
         height: 70px !important;
     }
 }
-/* Footer stílusok halloween témához */
-body.halloween-theme .site-footer {
-  background: linear-gradient(135deg, #2d1a1f 0%, #3d1a1a 100%) !important;
-  color: #ffd700 !important;
-  border-top: 1px solid rgba(255,140,0,0.12) !important;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.5) !important;
-}
 
-body.halloween-theme .site-footer .footer-nav a {
-  color: #ffd700 !important;
-}
-
-body.halloween-theme .site-footer .footer-nav a:hover {
-  color: #1a0f1f !important;
-  background: linear-gradient(135deg,#ff8c00,#ff4500);
-  padding: 2px 6px;
-  border-radius: 6px;
-}

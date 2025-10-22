@@ -54,6 +54,7 @@ function renderTunings(tunings) {
                         <button class="modern-btn-delete" onclick="deleteTuning(${tuning.id})">❌ Törlés</button>
                     </div>
                 </td>
+                
             `;
         } else {
             actionCell = '';

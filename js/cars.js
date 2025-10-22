@@ -97,7 +97,7 @@ function renderCars(cars) {
       // KÉSZPÉNZ ÁR számolása (eladási ár 93%-a)
       let keszpenzAr = '';
       if (c.EladasiAr && !isNaN(c.EladasiAr)) {
-        const keszpenzErtek = Math.round(c.EladasiAr * 0.93);
+        const keszpenzErtek = Math.round(c.EladasiAr * 0.925);
         keszpenzAr = new Intl.NumberFormat('hu-HU').format(keszpenzErtek);
       }
       
