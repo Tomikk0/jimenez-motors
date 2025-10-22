@@ -927,13 +927,53 @@
 <!-- EGYETLEN EGYSÉGES LÁBRÉSZ -->
 <footer id="siteFooter" class="site-footer">
   <div class="footer-inner">
-    <div class="footer-left">
-      <strong>JIMENEZ MOTORS INC.</strong><br>
-      Autókereskedés & Transport
+    <div class="footer-brand">
+      <div class="footer-logo-mark" aria-hidden="true">
+  <img src="https://i.imgur.com/wEi6GRD.png" alt="JM" class="footer-logo-mark">
+  </div>
+      <div class="footer-brand-text">
+        <div class="footer-title">JIMENEZ MOTORS INC.</div>
+        <div class="footer-subtitle">Autókereskedés & Transport</div>
+      </div>
+      <p class="footer-description">
+        Precíz flottakezelés, prémium kiszolgálás és megbízható logisztika a város legelhivatottabb csapatától.
+      </p>
     </div>
-    <div class="footer-right">
-      <small>© <span id="footerYear"></span> Jimenez Motors — Minden jog fenntartva</small>
+
+    <div class="footer-links">
+      <h4>Navigáció</h4>
+      <ul class="footer-link-list">
+        <li><a href="#autokPage" class="footer-link" onclick="showPage('autok'); return false;">🚗 Autók</a></li>
+        <li><a href="#eladottAutokPage" class="footer-link" onclick="showPage('eladottAutok'); return false;">✅ Eladott autók</a></li>
+        <li><a href="#tagokPage" class="footer-link" onclick="showPage('tagok'); return false;">👥 Tagok</a></li>
+        <li><a href="#statisztikaPage" class="footer-link" onclick="showPage('statisztika'); return false;">📊 Statisztika</a></li>
+        <li><a href="#autokKepekPage" class="footer-link" onclick="showPage('autokKepek'); return false;">🖼️ Autó árak</a></li>
+        <li><a href="#tuningokPage" class="footer-link" onclick="showPage('tuningok'); return false;">🔧 Tuningok</a></li>
+      </ul>
     </div>
+
+    <div class="footer-contact">
+      <h4>Kapcsolat</h4>
+      <ul class="footer-contact-list">
+        <li><a class="footer-link" href="">☎️ 112 879 248</a></li>
+        <li>📍 San Fierro ·</li>
+      </ul>
+    </div>
+
+    <div class="footer-community">
+      <h4>Közösség</h4>
+      <p class="footer-description">
+        Csatlakozz a legfrissebb akciókért és flottainformációkért.
+      </p>
+      <div class="footer-social">
+        <a class="footer-social-btn" href="https://discord.gg/dTTbgP2Xv5" target="_blank" rel="noopener">💬</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <span>© <span id="footerYear"></span> Jimenez Motors — Minden jog fenntartva</span>
+
   </div>
 </footer>
 <script src="js/config.js"></script>
