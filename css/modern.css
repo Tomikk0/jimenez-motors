@@ -308,6 +308,14 @@ body::after {
   gap: 12px;
 }
 
+.footer-link-protected {
+  display: none;
+}
+
+.logged-in .footer-link-protected {
+  display: block;
+}
+
 .footer-link {
   color: var(--ui-text-muted);
   text-decoration: none;

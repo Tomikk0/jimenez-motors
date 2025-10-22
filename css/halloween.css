@@ -1686,11 +1686,18 @@ body.halloween-theme .footer-contact-list {
     gap: 12px;
 }
 
+body.halloween-theme .footer-link-protected {
+    display: none;
+}
+
+body.halloween-theme.logged-in .footer-link-protected {
+    display: block;
+}
+
 body.halloween-theme .footer-link {
     color: rgba(255, 237, 213, 0.75) !important;
     text-decoration: none;
     display: inline-flex;
-    align-items: center;
     gap: 8px;
     font-weight: 500;
     transition: color 0.25s ease, transform 0.25s ease;
