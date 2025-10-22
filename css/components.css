@@ -43,26 +43,6 @@
 }
 
 /* MODERN FORM CARD STÍLUSOK */
-.modern-form-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 20px;
-  padding: 30px;
-  margin-bottom: 30px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.modern-form-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2, #4ecdc4, #45b7d1);
-}
 
 .modern-form-header {
   margin-bottom: 25px;
@@ -87,20 +67,6 @@
   margin-bottom: 25px;
 }
 
-.modern-form-group {
-  margin-bottom: 20px;
-}
-
-.modern-form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #2d3748;
-  font-weight: 600;
-  font-size: 1em;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
 .modern-input-container {
   position: relative;
@@ -186,10 +152,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
-  background: #f8fafc;
   padding: 20px;
   border-radius: 12px;
-  border: 2px solid #e2e8f0;
   margin-top: 10px;
   max-height: 200px;
   overflow-y: auto;
@@ -224,16 +188,12 @@
 
 /* Modern kép feltöltés */
 .modern-image-section {
-  background: white;
   border-radius: 16px;
   padding: 25px;
-  margin: 25px 0;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-  border: 1px solid rgba(0,0,0,0.05);
 }
 
 .modern-image-section h4 {
-  color: #2d3748;
+  color: #1654c0;
   margin-bottom: 15px;
   font-size: 1.2em;
   display: flex;
@@ -241,13 +201,6 @@
   gap: 10px;
 }
 
-.modern-image-upload-container {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin: 15px 0;
-  flex-wrap: wrap;
-}
 
 .modern-image-upload-btn {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
@@ -284,16 +237,8 @@
 .modern-image-preview img {
   max-width: 200px;
   max-height: 150px;
-  border-radius: 12px;
-  border: 3px solid #e2e8f0;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  transition: all 0.3s;
 }
 
-.modern-image-preview img:hover {
-  border-color: #667eea;
-  transform: scale(1.05);
-}
 
 /* Modern gombok */
 .modern-form-actions {
@@ -395,103 +340,8 @@
 }
 
 /* MODERN TÁBLÁZAT STÍLUSOK */
-.modern-table-container {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 20px;
-  padding: 25px;
-  margin: 20px 0;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  position: relative;
-  overflow: hidden;
-}
 
-.modern-table-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2, #4ecdc4, #45b7d1);
-}
 
-.modern-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: white;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  margin: 0;
-}
-
-.modern-table thead {
-  background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-}
-
-.modern-table th {
-  color: white;
-  font-weight: 600;
-  font-size: 0.95em;
-  padding: 18px 15px;
-  text-align: left;
-  border: none;
-  position: relative;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.modern-table th:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 20%;
-  height: 60%;
-  width: 1px;
-  background: rgba(255,255,255,0.3);
-}
-
-.modern-table tbody tr {
-  transition: all 0.3s ease;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.modern-table tbody tr:last-child {
-  border-bottom: none;
-}
-
-.modern-table tbody tr:hover {
-  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.modern-table td {
-  padding: 16px 15px;
-  border: none;
-  color: #4a5568;
-  font-weight: 500;
-  font-size: 0.92em;
-  position: relative;
-}
-
-.modern-table td:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 15%;
-  height: 70%;
-  width: 1px;
-  background: #f1f5f9;
-}
-
-/* Kép cella stílusok */
-.modern-table .image-cell {
-  text-align: center;
-  padding: 10px;
-}
 
 .modern-car-image {
   width: 70px;

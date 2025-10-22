@@ -116,10 +116,6 @@ body.halloween-theme .modern-input::placeholder {
 }
 
 /* Halloween táblázatok */
-body.halloween-theme .modern-table-container {
-  background: linear-gradient(135deg, #2d1a1f 0%, #3d1a1a 100%) !important;
-  border: 1px solid rgba(255, 140, 0, 0.3) !important;
-}
 
 body.halloween-theme .modern-table-container::before {
   background: linear-gradient(90deg, #ff8c00, #ff4500, #8b0000, #daa520) !important;
@@ -155,12 +151,12 @@ body.halloween-theme .modern-table td:not(:last-child)::after {
 
 /* Halloween gombok */
 body.halloween-theme .modern-btn-primary {
-  background: linear-gradient(135deg, #8b0000 0%, #5d2a2a 100%) !important;
-  box-shadow: 0 4px 15px rgba(139, 0, 0, 0.3) !important;
+  background: linear-gradient(135deg, #ff8c00 0%, #ff4500 100%) !important;
+  box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3) !important;
 }
 
 body.halloween-theme .modern-btn-primary:hover {
-  box-shadow: 0 8px 25px rgba(139, 0, 0, 0.4) !important;
+  box-shadow: 0 8px 25px rgba(255, 140, 0, 0.4) !important;
 }
 
 body.halloween-theme .modern-btn-secondary {
@@ -180,12 +176,10 @@ body.halloween-theme .modern-btn-sold {
 body.halloween-theme .modern-btn-sold:hover {
   box-shadow: 0 4px 15px rgba(139, 0, 0, 0.4) !important;
 }
-
 body.halloween-theme .modern-btn-delete {
   background: linear-gradient(135deg, #8b0000 0%, #5d2a2a 100%) !important;
   box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3) !important;
 }
-
 body.halloween-theme .modern-btn-delete:hover {
   box-shadow: 0 4px 15px rgba(139, 0, 0, 0.4) !important;
 }
@@ -438,14 +432,19 @@ body.halloween-theme .modern-input-container.price::before {
   color: #ff8c00 !important;
 }
 
+body.halloween-theme .modern-input-container.price::before,
 body.halloween-theme .modern-input-container:not(.price)::before {
-  content: "🦇" !important;
-  color: #ff8c00 !important;
-}
-
-body.halloween-theme .price-input-container.pp-price::before {
-  content: "🎃" !important;
-  color: #ff8c00 !important;
+  content: '';
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: #bd1212b7;
+  box-shadow: 0 0 0 6px rgba(247, 2, 2, 0.12);
+  opacity: 0.85;
 }
 
 /* Halloween státusz badge-ek */
@@ -481,10 +480,6 @@ body.halloween-theme .sale-type-option input[type="radio"]:checked + .sale-type-
 }
 
 /* Halloween tuning container */
-body.halloween-theme .modern-tuning-container {
-  background: #2d1a1f !important;
-  border: 2px solid #5d2a2a !important;
-}
 
 body.halloween-theme .modern-tuning-option {
   background: #3d1a1a !important;
@@ -504,10 +499,7 @@ body.halloween-theme .modern-tuning-option.selected {
 }
 
 /* Halloween kép feltöltés */
-body.halloween-theme .modern-image-section {
-  background: #2d1a1f !important;
-  border: 1px solid rgba(255, 140, 0, 0.1) !important;
-}
+
 
 body.halloween-theme .modern-image-section h4 {
   color: #ff8c00 !important;
@@ -698,16 +690,29 @@ body.halloween-theme .compact-add-tag input:focus {
     border-color: #ff8c00 !important;
     background: #5d2a2a !important;
 }
-
-/* Kép feltöltés szekciók */
-body.halloween-theme .modern-image-section {
-    background: linear-gradient(135deg, #2d1a1f 0%, #3d1a1a 100%) !important;
-    border: 1px solid rgba(255, 140, 0, 0.3) !important;
+body.halloween-theme .header-logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
 }
 
-body.halloween-theme .modern-image-section h4 {
-    color: #ff8c00 !important;
+
+body.halloween-theme .main-nav {
+  background: linear-gradient(135deg, #2d1a1f 0%, #3d1a1a 100%) !important;
+  border: 1px solid rgba(255, 140, 0, 0.3) !important;
+  backdrop-filter: blur(14px);
+  border-radius: 22px;
+  padding: 14px;
+  box-shadow: 0 22px 45px rgba(15, 23, 42, 0.1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 30px;
 }
+
 
 body.halloween-theme .modern-image-file-name {
     background: #3d1a1a !important;
@@ -716,11 +721,6 @@ body.halloween-theme .modern-image-file-name {
 }
 
 /* Tuning container */
-body.halloween-theme .modern-tuning-container {
-    background: #3d1a1a !important;
-    border: 2px solid #5d2a2a !important;
-}
-
 body.halloween-theme .modern-tuning-option {
     background: #2d1a1f !important;
     border: 2px solid #5d2a2a !important;
@@ -809,14 +809,17 @@ body.halloween-theme .modern-tags-table td:not(:last-child)::after {
 }
 
 /* Művelet gombok a táblázatokban */
+body.halloween-theme #tuningTableBody .modern-btn-sold,
+body.halloween-theme #tuningTableBody .modern-btn-sold:hover,
 body.halloween-theme .modern-action-buttons .modern-btn-sold,
 body.halloween-theme .modern-action-buttons .modern-btn-delete,
+body.halloween-theme #tuningTableBody .modern-btn-delete,
 body.halloween-theme .modern-action-buttons .modern-btn-kick {
     background: linear-gradient(135deg, #5d2a2a 0%, #8b0000 100%) !important;
     color: #ffd700 !important;
     border: 1px solid #ff8c00 !important;
 }
-
+body.halloween-theme #tuningTableBody .modern-btn-delete:hover,
 body.halloween-theme .modern-action-buttons .modern-btn-sold:hover,
 body.halloween-theme .modern-action-buttons .modern-btn-delete:hover,
 body.halloween-theme .modern-action-buttons .modern-btn-kick:hover {
@@ -1224,9 +1227,10 @@ body.halloween-theme .modern-login-input::placeholder {
 
 /* Gombok */
 body.halloween-theme .modern-btn-primary {
-    background: linear-gradient(135deg, #8b0000 0%, #5d2a2a 100%) !important;
-    box-shadow: 0 4px 15px rgba(139, 0, 0, 0.3) !important;
+    background: linear-gradient(135deg, #ff8c00 0%, #ff4500 100%) !important;
+    box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3) !important;
 }
+
 
 body.halloween-theme .modern-btn-secondary {
     background: linear-gradient(135deg, #ff8c00 0%, #ff4500 100%) !important;
@@ -1242,10 +1246,7 @@ body.halloween-theme .modern-btn-delete {
 }
 
 /* Táblázatok */
-body.halloween-theme .modern-table-container {
-    background: linear-gradient(135deg, #2d1a1f 0%, #3d1a1a 100%) !important;
-    border: 1px solid rgba(255, 140, 0, 0.3) !important;
-}
+
 
 body.halloween-theme .modern-table-container::before {
     background: linear-gradient(90deg, #ff8c00, #ff4500, #8b0000, #daa520) !important;
@@ -1420,20 +1421,7 @@ body.halloween-theme .modern-image-upload-container {
     background: transparent !important;
 }
 
-body.halloween-theme .modern-image-preview {
-    background: transparent !important;
-}
 
-body.halloween-theme .modern-image-preview img {
-    background: linear-gradient(135deg, #2d1a1f 0%, #3d1a1a 100%) !important;
-    border: 3px solid #ff8c00 !important;
-    box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3) !important;
-}
-
-body.halloween-theme .modern-image-preview img:hover {
-    border-color: #ffd700 !important;
-    box-shadow: 0 6px 20px rgba(255, 140, 0, 0.5) !important;
-}
 
 /* === FILE INPUT STYLING (ha van ilyen) === */
 body.halloween-theme input[type="file"] {
@@ -1639,15 +1627,13 @@ body.halloween-theme .footer-community {
 body.halloween-theme .footer-logo-mark {
     width: 64px;
     height: 64px;
-    border-radius: 18px;
-    background: linear-gradient(135deg, #ff8c00 0%, #ff4500 100%) !important;
+
     color: #1a0f1f !important;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
     font-size: 1.3rem;
-    box-shadow: 0 20px 35px rgba(255, 140, 0, 0.35);
     letter-spacing: 0.08em;
 }
 
@@ -1790,4 +1776,21 @@ body.halloween-theme .footer-separator {
     body.halloween-theme .footer-social {
         justify-content: flex-start;
     }
+}
+
+/* Section headers */
+
+body.halloween-theme .modern-form-header h2::after,
+body.halloween-theme .modern-form-header h3::after,
+body.halloween-theme .modern-login-header h3::after,
+body.halloween-theme .edit-modal-header h3::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  border-radius: 3px;
+  background:  linear-gradient(90deg, var(--ui-accent), transparent);
 }

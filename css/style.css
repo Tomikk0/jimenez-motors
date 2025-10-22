@@ -38,30 +38,7 @@ body {
   z-index: 2;
 }
 
-.header-logo-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  margin-bottom: 15px;
-  flex-wrap: wrap;
-}
 
-.header-image {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  border: 4px solid rgba(255,255,255,0.3);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-  object-fit: cover;
-  transition: all 0.3s ease;
-}
-
-.header-image:hover {
-  transform: scale(1.1);
-  border-color: rgba(255,255,255,0.6);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-}
 
 .header-text {
   text-align: center;
