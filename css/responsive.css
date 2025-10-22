@@ -193,7 +193,7 @@
   
   .compact-form-actions .modern-btn-primary,
   .compact-form-actions .modern-btn-secondary {
-    min-width: auto;
+    min-width: 100;
     width: 100%;
   }
 }

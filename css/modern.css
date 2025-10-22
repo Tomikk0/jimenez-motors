@@ -1,0 +1,269 @@
+/* =======================================================
+   JIMENEZ MOTORS - MODERN GLASS DASHBOARD THEME
+   ======================================================= */
+
+/* --- alap beállítások --- */
+body.modern-theme {
+  background: radial-gradient(circle at top left, #0d1117 0%, #111827 80%);
+  color: #f0f0f5;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  backdrop-filter: blur(20px);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* --- header --- */
+body.modern-theme .header-with-image {
+  background: linear-gradient(135deg, rgba(17, 25, 40, 0.9), rgba(30, 41, 59, 0.9));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(15px);
+}
+
+body.modern-theme .logo-main {
+  color: #00aaff;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-shadow: 0 0 12px rgba(0, 170, 255, 0.5);
+}
+
+body.modern-theme .logo-subtitle {
+  color: #a1b2ff;
+  font-weight: 500;
+}
+
+/* --- navigáció --- */
+body.modern-theme .main-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 20px;
+  border-radius: 12px;
+  margin: 20px auto;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  max-width: 1000px;
+}
+
+body.modern-theme .nav-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cfe7ff;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+body.modern-theme .nav-btn:hover {
+  background: rgba(0, 170, 255, 0.15);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(0, 170, 255, 0.3);
+}
+
+body.modern-theme .nav-btn.active {
+  background: linear-gradient(135deg, #00aaff, #0066ff);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(0, 170, 255, 0.6);
+}
+
+/* --- kártyák és form elemek --- */
+body.modern-theme .modern-form-card,
+body.modern-theme .stat-card,
+body.modern-theme .modern-login-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  padding: 25px 30px;
+  margin: 30px auto;
+  backdrop-filter: blur(30px);
+}
+
+body.modern-theme .modern-form-header h3,
+body.modern-theme .modern-form-header h2 {
+  color: #00aaff;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+body.modern-theme .modern-form-group label {
+  color: #cfe7ff;
+  font-weight: 500;
+}
+
+body.modern-theme .modern-input {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f0f4ff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  transition: all 0.2s ease;
+}
+
+body.modern-theme .modern-input:focus {
+  border-color: #00aaff;
+  box-shadow: 0 0 10px rgba(0, 170, 255, 0.4);
+  outline: none;
+}
+
+/* --- gombok --- */
+body.modern-theme .modern-btn-primary {
+  background: linear-gradient(135deg, #00aaff, #0066ff);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,170,255,0.3);
+  transition: all 0.25s ease;
+}
+
+body.modern-theme .modern-btn-primary:hover {
+  box-shadow: 0 6px 25px rgba(0,170,255,0.5);
+  transform: translateY(-2px);
+}
+
+body.modern-theme .modern-btn-secondary {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #a1b2ff;
+  border-radius: 10px;
+  padding: 10px 18px;
+  transition: all 0.25s ease;
+}
+
+body.modern-theme .modern-btn-secondary:hover {
+  background: rgba(0,170,255,0.15);
+  color: #fff;
+}
+
+/* --- táblázatok --- */
+body.modern-theme .modern-table-container {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  overflow: hidden;
+  margin: 30px auto;
+}
+
+body.modern-theme .modern-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+body.modern-theme .modern-table thead {
+  background: rgba(255,255,255,0.08);
+  color: #00aaff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+body.modern-theme .modern-table th,
+body.modern-theme .modern-table td {
+  padding: 14px 16px;
+  text-align: left;
+}
+
+body.modern-theme .modern-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+body.modern-theme .modern-table tbody tr:hover {
+  background: rgba(0,170,255,0.08);
+}
+
+/* --- modálok --- */
+body.modern-theme .edit-modal-content {
+  background: rgba(17, 25, 40, 0.9);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  backdrop-filter: blur(25px);
+}
+
+body.modern-theme .edit-modal-header {
+  background: linear-gradient(135deg, #00aaff, #0066ff);
+  color: #fff;
+  border-radius: 16px 16px 0 0;
+}
+
+body.modern-theme .edit-modal-footer {
+  background: rgba(255,255,255,0.02);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  border-radius: 0 0 16px 16px;
+}
+
+/* --- footer --- */
+body.modern-theme .site-footer {
+  background: rgba(17, 25, 40, 0.95);
+  color: #cfe7ff;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 -2px 20px rgba(0,0,0,0.5);
+}
+
+body.modern-theme .footer-nav a {
+  color: #a1b2ff;
+}
+
+body.modern-theme .footer-nav a:hover {
+  color: #00aaff;
+}
+
+/* --- üzenetek --- */
+body.modern-theme .message.success {
+  background: rgba(0,255,150,0.08);
+  border-left: 4px solid #00ffaa;
+  color: #aaffdd;
+}
+
+body.modern-theme .message.error {
+  background: rgba(255,80,80,0.08);
+  border-left: 4px solid #ff4444;
+  color: #ffaaaa;
+}
+
+body.modern-theme .message.warning {
+  background: rgba(255,190,0,0.08);
+  border-left: 4px solid #ffb700;
+  color: #ffe799;
+}
+
+/* --- animációk --- */
+body.modern-theme .modern-btn-primary,
+body.modern-theme .modern-form-card,
+body.modern-theme .modern-table-container,
+body.modern-theme .modern-form-header {
+  transition: all 0.25s ease;
+}
+
+body.modern-theme .modern-form-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 170, 255, 0.15);
+}
+
+/* --- reszponzív --- */
+@media (max-width: 768px) {
+  body.modern-theme .main-nav {
+    gap: 6px;
+  }
+  body.modern-theme .nav-btn {
+    flex: 1 1 auto;
+    font-size: 0.9rem;
+    padding: 8px 10px;
+  }
+  body.modern-theme .modern-form-card {
+    padding: 18px;
+  }
+}
