@@ -1,11 +1,9 @@
-/* MODERN LOGIN PANEL */
+/* Bejelentkezés */
 #loginPage {
   display: none !important;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
-  padding: 40px 20px;
-  background: #f4f6f9;
+  padding: 60px 20px 80px;
 }
 
 #loginPage.active {
@@ -13,843 +11,436 @@
 }
 
 .modern-login-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  padding: 50px 40px;
-  border-radius: 24px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+  width: min(420px, 94vw);
+  background: rgba(9, 18, 35, 0.92);
+  border-radius: 28px;
+  padding: 48px 42px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 40px 80px rgba(4, 9, 24, 0.75);
+  backdrop-filter: blur(18px);
   text-align: center;
-  max-width: 440px;
-  width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  position: relative;
-  margin: 0 auto;
-}
-
-.modern-login-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 5px;
-  background: linear-gradient(90deg, #667eea, #764ba2, #4ecdc4, #45b7d1);
-}
-
-.modern-login-header {
-  margin-bottom: 35px;
 }
 
 .modern-login-header h3 {
-  color: #2d3748;
-  font-size: 1.8em;
-  font-weight: 700;
-  margin: 0 0 12px 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
+  margin: 0 0 14px;
+  color: var(--text-primary);
+  font-size: 1.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .modern-login-header p {
-  color: #718096;
-  font-size: 1.1em;
+  color: var(--text-secondary);
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .modern-login-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
+  margin-top: 30px;
 }
 
 .modern-login-input {
   width: 100%;
-  padding: 16px 18px;
-  border: 2px solid #e2e8f0;
-  border-radius: 14px;
-  font-size: 16px;
-  font-weight: 500;
-  transition: all 0.3s;
-  box-sizing: border-box;
-  background: #f8fafc;
-  color: #2d3748;
+  padding: 14px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(7, 15, 30, 0.8);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
   font-family: inherit;
 }
 
 .modern-login-input:focus {
-  border-color: #667eea;
-  background: white;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
   outline: none;
-  transform: translateY(-2px);
+  border-color: rgba(255, 77, 90, 0.6);
+  box-shadow: 0 0 0 3px rgba(255, 77, 90, 0.22);
+  background: rgba(12, 24, 48, 0.9);
 }
 
 .modern-login-input::placeholder {
-  color: #a0aec0;
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .modern-login-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  padding: 18px 30px;
-  border: none;
-  border-radius: 14px;
-  color: white;
-  font-size: 1.1em;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-  margin-top: 10px;
-  font-family: inherit;
-  position: relative;
-  overflow: hidden;
-}
-
-.modern-login-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
+  margin-top: 12px;
   width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-  transition: left 0.6s;
+  padding: 14px 26px;
+  border-radius: 16px;
+  border: none;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ff4d5a, #ff6b4d);
+  color: #fff;
+  box-shadow: 0 25px 55px rgba(255, 94, 87, 0.45);
+  transition: all 0.3s ease;
 }
 
-.modern-login-btn:hover::before {
-  left: 100%;
-}
-
-.modern-login-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.5);
-}
-
-.modern-login-btn:active {
-  transform: translateY(-1px);
+.modern-login-btn:hover,
+.modern-login-btn:focus-visible {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
 }
 
 .modern-login-btn.loading {
   pointer-events: none;
-  opacity: 0.8;
-}
-
-.modern-login-btn.loading::after {
-  content: '';
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid transparent;
-  border-top: 2px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-left: 8px;
-}
-
-.modern-login-footer {
-  margin-top: 25px;
-  padding-top: 25px;
-  border-top: 1px solid #e2e8f0;
+  opacity: 0.7;
 }
 
 .modern-back-btn {
-  background: linear-gradient(135deg, #a0aec0 0%, #718096 100%) !important;
-  padding: 14px 25px;
-  border: none;
-  border-radius: 12px;
-  color: white;
-  font-size: 1em;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 15px rgba(113, 128, 150, 0.3);
   width: 100%;
+  margin-top: 16px;
+  padding: 14px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(9, 20, 42, 0.72);
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.modern-back-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(113, 128, 150, 0.4);
+.modern-back-btn:hover,
+.modern-back-btn:focus-visible {
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
-/* MODERN MODAL DESIGN */
+/* Modalok */
 .edit-modal {
   display: none;
   position: fixed;
-  z-index: 10000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(10px);
+  inset: 0;
+  background: rgba(2, 6, 16, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
 
 .edit-modal-content {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  margin: 5vh auto;
-  border-radius: 20px;
-  width: 95%;
-  max-width: 480px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  background: rgba(9, 18, 35, 0.9);
+  border-radius: 24px;
+  width: min(520px, 94vw);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.65);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-content-wide {
+  max-width: 900px;
+  max-height: 90vh;
+}
+
+.modal-content-narrow {
+  max-width: 500px;
 }
 
 .edit-modal-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 25px;
-  text-align: center;
-  position: relative;
-}
-
-.edit-modal-header h3 {
-  margin: 0;
-  color: white;
-  font-size: 1.5em;
-  font-weight: 700;
-}
-
-.edit-close {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  font-size: 24px;
-  cursor: pointer;
-  color: white;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
-  background: rgba(255,255,255,0.2);
-}
-
-.edit-close:hover {
-  background: rgba(255,255,255,0.3);
-  transform: rotate(90deg);
+  padding: 26px 32px;
+  background: linear-gradient(135deg, rgba(255, 77, 90, 0.9), rgba(255, 107, 77, 0.85));
+  color: #fff;
 }
 
 .edit-modal-body {
-  padding: 30px;
+  padding: 30px 32px 36px;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.modal-body-scroll {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.modal-body-padded {
+  padding: 30px 32px;
+}
+
+.edit-modal-body label {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.edit-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 32px 32px;
+}
+
+.edit-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
 }
 
 .car-info-card {
-  background: white;
-  border-radius: 16px;
-  padding: 20px;
-  margin-bottom: 25px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  border: 1px solid rgba(0,0,0,0.05);
   display: flex;
-  gap: 15px;
+  gap: 24px;
   align-items: center;
+  background: rgba(7, 14, 28, 0.75);
+  border-radius: 20px;
+  padding: 20px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .car-image-preview img {
-  width: 80px;
+  width: 120px;
   height: 80px;
   object-fit: cover;
-  border-radius: 12px;
-  border: 3px solid #e9ecef;
-}
-
-.car-details h4 {
-  margin: 0 0 12px 0;
-  color: #2d3748;
-  font-size: 1.3em;
-  font-weight: 700;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .price-info-grid {
   display: grid;
-  gap: 8px;
-}
-
-.price-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 0;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
 .price-label {
-  color: #718096;
-  font-size: 0.9em;
-  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
 .price-value {
-  color: #2d3748;
+  color: var(--text-primary);
   font-weight: 600;
-  font-size: 0.95em;
 }
 
 .sale-form {
-  background: white;
-  border-radius: 16px;
-  padding: 25px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  border: 1px solid rgba(0,0,0,0.05);
+  display: grid;
+  gap: 24px;
 }
 
-.form-group {
-  margin-bottom: 25px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 12px;
-  color: #2d3748;
-  font-weight: 600;
-  font-size: 1.1em;
+.sale-type-selector {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 16px;
+  margin-top: 12px;
 }
 
-.price-input-container {
+.sale-type-option {
+  flex: 1;
   position: relative;
 }
 
-.price-input-container::before {
-  content: '$';
+.sale-type-option input {
   position: absolute;
-  left: 15px;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.sale-type-card {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(7, 15, 30, 0.8);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.sale-type-card.cash {
+  border-color: rgba(45, 212, 191, 0.45);
+}
+
+.sale-type-card.normal {
+  border-color: rgba(250, 204, 21, 0.45);
+}
+
+.sale-type-option input:checked + .sale-type-card {
+  background: linear-gradient(135deg, rgba(255, 77, 90, 0.8), rgba(255, 107, 77, 0.8));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 20px 40px rgba(255, 94, 87, 0.35);
+}
+
+.sale-type-card:hover {
+  transform: translateY(-2px);
+}
+
+.sale-type-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.sale-type-caption {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.price-input-container input {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(7, 15, 30, 0.75);
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.price-input-container.price,
+.price-input-container.pp-price {
+  position: relative;
+}
+
+.price-input-container.price::before,
+.price-input-container.pp-price::before {
+  position: absolute;
+  left: 18px;
   top: 50%;
   transform: translateY(-50%);
-  color: #667eea;
-  font-weight: bold;
-  font-size: 1.1em;
-  z-index: 2;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 15px 15px 15px 40px;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 16px;
+  color: rgba(255, 255, 255, 0.4);
   font-weight: 600;
-  transition: all 0.3s;
-  box-sizing: border-box;
-  background: #f8fafc;
+  letter-spacing: 0.05em;
 }
 
-.form-group input:focus {
-  border-color: #667eea;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+.price-input-container.price input,
+.price-input-container.pp-price input {
+  padding-left: 54px;
+}
+
+.price-input-container.price::before {
+  content: 'Ft';
+}
+
+.price-input-container.pp-price::before {
+  content: 'PP';
+}
+
+.price-input-container input:focus {
   outline: none;
+  border-color: rgba(255, 77, 90, 0.55);
+  box-shadow: 0 0 0 3px rgba(255, 77, 90, 0.2);
 }
 
 .price-hint {
-  font-size: 0.85em;
-  color: #a0aec0;
-  margin-top: 8px;
-  text-align: center;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .profit-calc {
-  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
-  color: white;
-  padding: 20px;
-  border-radius: 12px;
-  margin-top: 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(7, 15, 30, 0.75);
+  padding: 20px 24px;
+  display: grid;
+  gap: 12px;
 }
 
 .profit-header {
-  text-align: center;
-  margin-bottom: 15px;
   font-weight: 600;
-  font-size: 1.1em;
-  opacity: 0.9;
+  color: var(--text-primary);
 }
 
 .profit-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.2);
-}
-
-.profit-row:last-child {
-  border-bottom: none;
+  color: var(--text-secondary);
 }
 
 .profit-row.total {
-  font-weight: 700;
-  font-size: 1.2em;
-  padding-top: 12px;
-  margin-top: 8px;
-  border-top: 2px solid rgba(255,255,255,0.3);
-}
-
-.edit-modal-footer {
-  display: flex;
-  gap: 15px;
-  padding: 25px 30px;
-  background: rgba(248, 250, 252, 0.8);
-  border-top: 1px solid rgba(0,0,0,0.05);
-}
-
-.btn-cancel {
-  flex: 1;
-  background: linear-gradient(135deg, #a0aec0 0%, #718096 100%) !important;
-  padding: 15px;
-  border: none;
-  border-radius: 12px;
-  color: white;
-  font-size: 1em;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
+  color: var(--text-primary);
 }
 
-.btn-cancel:hover {
-  transform: translateY(-2px);
+.tax-value {
+  color: #f87171;
 }
 
-.btn-confirm-sale {
-  flex: 2;
-  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important;
-  padding: 15px;
-  border: none;
-  border-radius: 12px;
-  color: white;
-  font-size: 1em;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.btn-confirm-sale:hover {
-  transform: translateY(-2px);
-}
-
-/* KÉP MODAL */
-.image-modal {
-  display: none;
-  position: fixed;
-  z-index: 10000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.9);
-  backdrop-filter: blur(10px);
-}
-
-.modal-content {
-  display: block;
-  margin: auto;
-  max-width: 90%;
-  max-height: 90%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.close-modal {
-  position: absolute;
-  top: 20px;
-  right: 35px;
-  color: #f1f1f1;
-  font-size: 40px;
-  font-weight: bold;
-  cursor: pointer;
-  z-index: 10001;
-  background: rgba(0,0,0,0.5);
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
-}
-
-.close-modal:hover {
-  background: rgba(0,0,0,0.8);
-  transform: scale(1.1);
-}
-
-/* Admin history section - alapértelmezetten rejtve */
-#adminHistorySection {
-  display: none !important;
-}
-
-/* Csak admin bejelentkezéskor jelenik meg */
-.logged-in.admin #adminHistorySection {
-  display: block !important;
-}
-
-/* Napló stílusok */
-.history-container {
-  background: white;
-  border-radius: 12px;
-  padding: 0;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.history-item {
-  padding: 20px;
-  border-bottom: 1px solid #f1f5f9;
-  transition: all 0.3s ease;
-}
-
-.history-item:last-child {
-  border-bottom: none;
-}
-
-.history-item:hover {
-  background: #f8fafc;
-}
-
-.history-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 10px;
-}
-
-.history-member-name {
-  font-weight: 700;
-  color: #2d3748;
-  font-size: 1.1em;
-}
-
-.history-date {
-  color: #718096;
-  font-size: 0.9em;
-  background: #f7fafc;
-  padding: 4px 8px;
-  border-radius: 6px;
-}
-
-.history-reason {
-  color: #4a5568;
-  line-height: 1.5;
-  margin-bottom: 8px;
-  background: #f8fafc;
-  padding: 12px;
-  border-radius: 8px;
-  border-left: 4px solid #e53e3e;
-}
-
-.history-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.85em;
-  color: #a0aec0;
-}
-
-.history-kicked-by {
-  font-weight: 600;
-  color: #e53e3e;
-}
-
-.history-empty {
-  text-align: center;
-  padding: 40px 20px;
-  color: #718096;
-}
-
-.history-empty::before {
-  content: '📝';
-  font-size: 3em;
-  display: block;
-  margin-bottom: 15px;
-  opacity: 0.5;
-}
-
-/* KITŰZŐ MODAL STÍLUSOK */
-.badge-add-form {
-  background: white;
-  border-radius: 16px;
-  padding: 25px;
-  margin-bottom: 25px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-  border: 1px solid rgba(0,0,0,0.05);
-}
-
-.badge-add-form h4 {
-  color: #2d3748;
-  margin-bottom: 20px;
-  font-size: 1.3em;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.badge-container {
+/* Jelvények, tag admin és egyéb táblák */
+.badge-history,
+.member-history {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 20px;
+  gap: 18px;
 }
 
-.badge-card {
-  background: white;
-  border-radius: 16px;
-  padding: 25px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
-  position: relative;
+.badge-history-item,
+.member-history-item {
+  background: rgba(7, 16, 32, 0.85);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 18px 20px;
+  color: var(--text-secondary);
 }
 
-.badge-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+.badge-history-item strong,
+.member-history-item strong {
+  color: var(--text-primary);
 }
 
-.badge-rank-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 15px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #f1f5f9;
+.member-info-card {
+  background: rgba(7, 16, 32, 0.85);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
 }
 
-.badge-rank-icon {
-  font-size: 2em;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  color: white;
-}
-
-.badge-rank-info {
-  flex: 1;
-}
-
-.badge-rank-name {
-  font-size: 1.3em;
-  font-weight: 700;
-  color: #2d3748;
-  margin: 0 0 5px 0;
-}
-
-.badge-members-count {
-  color: #718096;
-  font-size: 0.9em;
-  font-weight: 500;
-}
-
-/* Admin-only megjegyzés rész */
-.badge-note-section {
-  margin-top: 15px;
-  padding: 15px;
-  background: #f8fafc;
-  border-radius: 12px;
-  border-left: 4px solid #667eea;
-}
-
-.badge-note-label {
-  font-weight: 600;
-  color: #4a5568;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.badge-note-content {
-  color: #2d3748;
-  line-height: 1.5;
-  font-size: 0.95em;
-  white-space: pre-line;
-  word-wrap: break-word;
-}
-
-.badge-note-empty {
-  color: #a0aec0;
-  font-style: italic;
-  font-size: 0.9em;
-}
-
-/* Művelet gombok - CSAK ADMIN */
-.badge-actions {
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.badge-edit-btn {
-  background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 0.85em;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 2px 8px rgba(237, 137, 54, 0.3);
-  width: 100%;
-}
-
-.badge-edit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(237, 137, 54, 0.4);
-}
-
-/* Törlés gomb stílus */
-.badge-delete-btn {
-  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-size: 0.85em;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3);
-  width: 100%;
-}
-
-.badge-delete-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(229, 62, 62, 0.4);
-}
-
-/* Textarea stílus a szerkesztéshez */
-.badge-add-form textarea {
-  white-space: pre-wrap;
-  font-family: inherit;
-  line-height: 1.5;
-}
-
-/* Automatikus mentés státusz */
-.auto-save-status {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 10000;
-  padding: 10px 15px;
-  border-radius: 8px;
-  font-size: 0.9em;
-  background: #48bb78;
-  color: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.auto-save-status.error {
-  background: #e53e3e;
-}
-
-/* Tag történet gomb jobb oldali pozicionálása 10px-el lejjebb */
-.form-header-with-filters {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 25px;
-  padding: 0 20px;
-  flex-wrap: wrap;
-  gap: 15px;
-  position: relative;
-}
-
-.form-title {
-  flex: 1;
-}
-
-.form-title h2 {
+.member-info-card h4 {
   margin: 0;
-  text-align: left;
+  color: var(--text-primary);
 }
 
-.compact-filters-row {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: flex-end;
-  margin-top: 10px;
+.modal-subtext {
+  color: var(--text-secondary) !important;
+  margin: 10px 0 !important;
 }
 
-#historyButton {
-  display: none;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 15px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+#badgeModal .modal-content,
+#tagAdminModal .modal-content,
+#changePasswordModal .modal-content {
+  background: rgba(9, 18, 35, 0.94);
+  border-radius: 24px;
+  padding: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 36px 80px rgba(3, 8, 20, 0.75);
+}
+
+#badgeModal h3,
+#tagAdminModal h3,
+#changePasswordModal h3 {
+  margin-top: 0;
+  color: var(--text-primary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: transparent;
   border: none;
-  border-radius: 10px;
-  color: white;
-  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 1.4rem;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  position: relative;
-  top: 10px;
-  font-size: 14px;
-  height: 40px;
-  min-width: 120px;
-  justify-content: center;
+  transition: color 0.3s ease;
 }
 
-#historyButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+.modal-close:hover {
+  color: var(--text-primary);
 }
 
-/* Kitűző gomb stílus */
-#badgeButton {
-  display: none;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 15px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  border: none;
-  border-radius: 10px;
-  color: white;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  position: relative;
-  top: 10px;
-  font-size: 14px;
-  height: 40px;
-  min-width: 120px;
-  justify-content: center;
-}
-
-#badgeButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-/* Bejelentkezés után megjelenik */
-.logged-in.admin #historyButton,
-.logged-in.admin #badgeButton {
-  display: flex !important;
-}
-
-/* ... meglévő stílusok ... */
-
-/* Galéria ár módosítás modal */
-#editGalleryPriceModal {
-  display: none;
-}
-
-#editGalleryPriceModal.edit-modal {
-  z-index: 10001;
+/* Sötét háttér a grafikonokhoz */
+.chart-container {
+  background: rgba(9, 18, 35, 0.85);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 32px;
+  box-shadow: 0 32px 70px rgba(4, 9, 24, 0.6);
 }
