@@ -1,8 +1,8 @@
-// === SUPABASE KAPCSOLAT === 
-const supabase = window.supabase.createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_KEY
-);
+// config.js
+const supabaseUrl = window.__SUPABASE_URL__;
+const supabaseKey = window.__SUPABASE_KEY__;
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
 
 // Globális változók
 let tuningOptions = [];
@@ -16,3 +16,4 @@ let currentCarIdForSale = null;
 let currentKickMemberName = null;
 
 let gallerySelectedImage = null;
+
