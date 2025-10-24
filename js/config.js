@@ -1,5 +1,6 @@
 // === SUPABASE KAPCSOLAT === 
-
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY;
 
 // Globális változók
 let tuningOptions = [];
@@ -13,3 +14,4 @@ let currentCarIdForSale = null;
 let currentKickMemberName = null;
 
 let gallerySelectedImage = null;
+
