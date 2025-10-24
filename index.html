@@ -1,29 +1,86 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <base target="_top">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/pages.css">
   <link rel="stylesheet" href="css/responsive.css">
-  <link rel="stylesheet" href="css/halloween.css">
-  <link rel="stylesheet" href="css/modern.css">
 </head>
-<body>
-  <body class="modern-theme">
+<body class="site-body">
   <main id="siteMain" class="site-main">
-<div class="header-with-image">
-  <div class="header-content">
-    <div class="header-logo-container">
-      <img src="https://i.imgur.com/wEi6GRD.png" alt="Jimenez Motors Logo" class="header-image">
-      <div class="header-text">
-        <div class="logo-main">JIMENEZ MOTORS INC.</div>
-        <div class="logo-subtitle">Autókereskedés & Transport</div>
+    <header class="site-hero">
+      <div class="hero-topbar">
+        <div class="brand">
+          <img src="https://i.imgur.com/wEi6GRD.png" alt="Jimenez Motors" class="brand-logo">
+          <div class="brand-text">
+            <span class="brand-title">Jimenez Motors</span>
+            <span class="brand-tagline">Autókereskedés &amp; Transport</span>
+          </div>
+        </div>
+        <nav class="hero-nav">
+          <a href="#about" class="hero-link">About</a>
+          <a href="#inventory" class="hero-link">Inventory</a>
+          <a href="#contact" class="hero-link">Contact</a>
+          <button class="hero-cta" onclick="showPage('autok')">Explore Inventory</button>
+        </nav>
       </div>
-    </div>
-  </div>
-</div>
+      <div class="hero-content">
+        <div class="hero-copy">
+          <p class="hero-eyebrow">Hírek</p>
+          <h1>Fedezd fel a Jimenez Motors új generációját</h1>
+          <p>
+            A legújabb modellek, fejlett technológia és kompromisszummentes luxus egyetlen platformon.
+            Személyre szabott ajánlatokkal és valós idejű készletinformációkkal várunk.
+          </p>
+          <div class="hero-actions">
+            <button class="hero-primary" onclick="showPage('autok')">Járművek megtekintése</button>
+            <button class="hero-secondary" onclick="showPage('login')">Csatlakozz a csapathoz</button>
+          </div>
+        </div>
+        <div class="hero-preview" id="inventory">
+          <div class="preview-card">
+            <img src="https://images.unsplash.com/photo-1549921296-3c6b87c67a6d?auto=format&fit=crop&w=900&q=80" alt="Model S" loading="lazy">
+            <div class="preview-meta">
+              <span class="preview-title">Autó modell</span>
+              <span class="preview-status">Turbó Eladó</span>
+            </div>
+          </div>
+          <div class="preview-card">
+            <img src="https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=900&q=80" alt="Model 3" loading="lazy">
+            <div class="preview-meta">
+              <span class="preview-title">Autó modell</span>
+              <span class="preview-status">Turbó Eladó</span>
+            </div>
+          </div>
+          <div class="preview-card">
+            <img src="https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?auto=format&fit=crop&w=900&q=80" alt="Model X" loading="lazy">
+            <div class="preview-meta">
+              <span class="preview-title">Autó modell</span>
+              <span class="preview-status">Turbó Eladó</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="welcome-section" id="about">
+      <div class="welcome-card">
+        <h2>Welcome to Jimenez Motors</h2>
+        <p>
+          We provide premium, cutting-edge technologies that harmonise teljesítmény and kényelem.
+          Fedezd fel változatos modelljeinket, és válaszd ki azt, amelyik meghaladja minden várakozásod.
+        </p>
+      </div>
+    </section>
 
 <!-- AUTÓK OLDAL -->
 <div id="autokPage" class="page active">
@@ -212,13 +269,13 @@
 
 <!-- TAG ADMIN MODAL -->
 <div id="tagAdminModal" class="edit-modal" style="display: none;">
-    <div class="edit-modal-content" style="max-width: 900px; max-height: 90vh;">
+    <div class="edit-modal-content modal-content-wide">
         <div class="edit-modal-header">
             <h3>👑 Tag Adminisztráció</h3>
             <span class="edit-close" onclick="closeTagAdminModal()">&times;</span>
         </div>
         
-        <div class="edit-modal-body" style="max-height: 70vh; overflow-y: auto;">
+        <div class="edit-modal-body modal-body-scroll">
             <div id="tagAdminMessage" class="message"></div>
 
             <!-- ÚJ TAG HOZZÁADÁSA -->
@@ -274,7 +331,7 @@
                 </div>
 
                 <div class="modern-form-row">
-                    <div class="modern-form-group" style="grid-column: 1 / -1;">
+                    <div class="modern-form-group full-span">
                         <label for="customPassword">🔐 Jelszó</label>
                         <input type="password" id="customPassword" class="modern-input" placeholder="Írd be a jelszót...">
                         <div class="input-hint">A tag ezzel a jelszóval tud bejelentkezni (minimum 4 karakter)</div>
@@ -317,14 +374,13 @@
       <div class="edit-modal-body">
         <div class="member-info-card">
           <h4 id="kickMemberName"></h4>
-          <p style="color: #718096; margin: 10px 0;">Biztosan ki szeretnéd rúgni ezt a tagot?</p>
+          <p class="modal-subtext">Biztosan ki szeretnéd rúgni ezt a tagot?</p>
         </div>
 
         <div class="sale-form">
           <div class="form-group">
             <label for="kickReason">📝 Indoklás</label>
-            <textarea id="kickReason" class="modern-input" placeholder="Add meg a kirúgás indokát..." 
-                     style="width: 100%; min-height: 100px; padding: 12px; resize: vertical;"></textarea>
+            <textarea id="kickReason" class="modern-input" placeholder="Add meg a kirúgás indokát..."></textarea>
           </div>
         </div>
       </div>
@@ -336,7 +392,7 @@
     </div>
   </div>
 <div id="changePasswordForUserModal" class="edit-modal" style="display: none;">
-    <div class="edit-modal-content" style="max-width: 500px;">
+    <div class="edit-modal-content modal-content-narrow">
         <div class="edit-modal-header">
             <h3>🔐 Jelszó váltás</h3>
             <span class="edit-close" onclick="closeChangePasswordForUserModal()">&times;</span>
@@ -345,9 +401,9 @@
         <div class="edit-modal-body">
             <div id="changePasswordForUserMessage" class="message"></div>
             
-            <div class="member-info-card" style="text-align: center; margin-bottom: 20px;">
-                <h4 id="changePasswordForUserName" style="margin: 0; color: #2d3748;"></h4>
-                <p style="color: #718096; margin: 10px 0 0 0;">új jelszó beállítása</p>
+            <div class="member-info-card">
+                <h4 id="changePasswordForUserName"></h4>
+                <p class="modal-subtext">új jelszó beállítása</p>
             </div>
 
             <div class="sale-form">
@@ -373,13 +429,13 @@
 </div>
 
   <div id="kickedMembersModal" class="edit-modal" style="display: none;">
-    <div class="edit-modal-content" style="max-width: 900px; max-height: 90vh;">
+    <div class="edit-modal-content modal-content-wide">
       <div class="edit-modal-header">
         <h3>📋 Tag történet napló</h3>
         <span class="edit-close" onclick="closeKickedMembersModal()">&times;</span>
       </div>
       
-      <div class="edit-modal-body" style="max-height: 70vh; overflow-y: auto; padding: 30px;">
+      <div class="edit-modal-body modal-body-scroll modal-body-padded">
         <div id="kickedMembersList" class="history-container">
           <div class="table-loading">Napló betöltése...</div>
         </div>
@@ -392,13 +448,13 @@
   </div>
 
   <div id="badgeModal" class="edit-modal" style="display: none;">
-    <div class="edit-modal-content" style="max-width: 900px; max-height: 90vh;">
+    <div class="edit-modal-content modal-content-wide">
       <div class="edit-modal-header">
         <h3>⭐ Kitűzők - Rang Megjegyzések</h3>
         <span class="edit-close" onclick="closeBadgeModal()">&times;</span>
       </div>
       
-      <div class="edit-modal-body" style="max-height: 70vh; overflow-y: auto;">
+      <div class="edit-modal-body modal-body-scroll">
         <div id="badgeMessage" class="message"></div>
 
         <div class="badge-add-form">
@@ -424,9 +480,8 @@
             
             <div class="modern-form-group">
               <label for="badgeNote">📝 Megjegyzés</label>
-              <textarea id="badgeNote" class="modern-input" 
-                       placeholder="Írj megjegyzést ehhez a ranghoz..." 
-                       style="min-height: 80px; resize: vertical;"></textarea>
+              <textarea id="badgeNote" class="modern-input"
+                       placeholder="Írj megjegyzést ehhez a ranghoz..."></textarea>
             </div>
           </div>
           
@@ -678,7 +733,7 @@
 
       <!-- Modern kép feltöltés - NEM KÖTELEZŐ -->
       <div class="modern-image-section">
-        <h4>📷 Autó képe <span style="color: #a0aec0; font-size: 0.8em; font-weight: normal;">(opcionális)</span></h4>
+        <h4>📷 Autó képe <span class="field-hint">(opcionális)</span></h4>
         <div class="modern-image-upload-container">
           <input type="file" id="galleryCarImage" accept="image/*" style="display: none;" onchange="handleGalleryImageSelect(event)">
           <button type="button" onclick="document.getElementById('galleryCarImage').click()" class="modern-image-upload-btn">
@@ -790,14 +845,14 @@
       <button onclick="showPage('autok')" class="modern-back-btn">
         ⬅️ Vissza a böngészéshez
       </button>
-      <div id="loginMessage" class="message" style="margin-top: 20px;"></div>
+      <div id="loginMessage" class="message message-spaced"></div>
     </div>
   </div>
 </div>
 
 <!-- Jelszóváltoztatás Modal -->
 <div id="changePasswordModal" class="edit-modal" style="display: none;">
-  <div class="edit-modal-content" style="max-width: 500px;">
+  <div class="edit-modal-content modal-content-narrow">
     <div class="edit-modal-header">
       <h3>🔐 Jelszó megváltoztatása</h3>
       <span class="edit-close" onclick="closeChangePasswordModal()">&times;</span>
@@ -866,19 +921,19 @@
         <!-- Eladás típus választás -->
         <div class="form-group">
           <label>💰 Eladás típusa</label>
-          <div class="sale-type-selector" style="display: flex; gap: 15px; margin-top: 10px;">
-            <label class="sale-type-option" style="flex: 1;">
+          <div class="sale-type-selector">
+            <label class="sale-type-option">
               <input type="radio" name="saleType" value="kp" id="saleTypeKp" checked onchange="updateProfitCalculator()">
-              <div class="sale-type-card" style="padding: 15px; border: 2px solid #48bb78; border-radius: 10px; text-align: center; cursor: pointer; background: #f0fff4;">
-                <div style="font-size: 1.2em; font-weight: bold; color: #48bb78;">💵 Készpénz</div>
-                <div style="font-size: 0.9em; color: #718096; margin-top: 5px;">Nincs adó</div>
+              <div class="sale-type-card cash">
+                <div class="sale-type-title">💵 Készpénz</div>
+                <div class="sale-type-caption">Nincs adó</div>
               </div>
             </label>
-            <label class="sale-type-option" style="flex: 1;">
+            <label class="sale-type-option">
               <input type="radio" name="saleType" value="normal" id="saleTypeNormal" onchange="updateProfitCalculator()">
-              <div class="sale-type-card" style="padding: 15px; border: 2px solid #ed8936; border-radius: 10px; text-align: center; cursor: pointer; background: #fffaf0;">
-                <div style="font-size: 1.2em; font-weight: bold; color: #ed8936;">🏪 Normál</div>
-                <div style="font-size: 0.9em; color: #718096; margin-top: 5px;">-7.5% adó</div>
+              <div class="sale-type-card normal">
+                <div class="sale-type-title">🏪 Normál</div>
+                <div class="sale-type-caption">-7.5% adó</div>
               </div>
             </label>
           </div>
@@ -904,7 +959,7 @@
           </div>
           <div class="profit-row" id="taxLabel" style="display: none;">
             <span>Adó (7.5%):</span>
-            <span id="calcTax" style="color: #e53e3e;">0 $</span>
+            <span id="calcTax" class="tax-value">0 $</span>
           </div>
           <div class="profit-row" id="netSaleLabel" style="display: none;">
             <span>Nettó ár:</span>
@@ -923,16 +978,15 @@
       <button class="btn-confirm-sale" onclick="confirmSaleWithEdit()">✅ Autó eladva</button>
     </div>
   </div>
-</div>
+ </div>
 </main>
-</body>
 <!-- EGYETLEN EGYSÉGES LÁBRÉSZ -->
-<footer id="siteFooter" class="site-footer">
+<footer id="contact" class="site-footer">
   <div class="footer-inner">
     <div class="footer-brand">
       <div class="footer-logo-mark" aria-hidden="true">
-  <img src="https://i.imgur.com/wEi6GRD.png" alt="JM" class="footer-logo-mark">
-  </div>
+        <img src="https://i.imgur.com/wEi6GRD.png" alt="JM" class="footer-logo">
+      </div>
       <div class="footer-brand-text">
         <div class="footer-title">JIMENEZ MOTORS INC.</div>
         <div class="footer-subtitle">Autókereskedés & Transport</div>
@@ -968,12 +1022,9 @@
         Csatlakozz a legfrissebb akciókért.
       </p>
       <div class="footer-social">
-       <a class="footer-social-btn" 
-   href="https://discord.gg/dTTbgP2Xv5" 
-   target="_blank" 
-   rel="noopener">
-  <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/discord.svg" alt="Discord" width="24" height="24">
-</a>
+        <a class="footer-social-btn" href="https://discord.gg/dTTbgP2Xv5" target="_blank" rel="noopener">
+          <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/discord.svg" alt="Discord" width="24" height="24">
+        </a>
       </div>
     </div>
   </div>
