@@ -50,7 +50,6 @@ function renderCars(cars) {
         <tr>
           <td colspan="${colCount}" class="empty-table-message">
             🚗 Nincsenek eladó autók<br>
-            <small style="opacity: 0.7;">Adj hozzá egy új autót a fenti űrlappal!</small>
           </td>
         </tr>
       `;
