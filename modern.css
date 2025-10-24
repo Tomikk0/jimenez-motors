@@ -1,12 +1,11 @@
-/* Modern light theme for Jimenez Motors */
 
 :root {
-  --ui-bg: #f3f5fa;
-  --ui-bg-soft: #f8f9fc;
-  --ui-surface: rgba(255, 255, 255, 0.78);
-  --ui-surface-strong: #ffffff;
-  --ui-border: rgba(15, 23, 42, 0.08);
-  --ui-divider: rgba(15, 23, 42, 0.06);
+  --ui-bg: #e8ecf7bd;
+  --ui-bg-soft: #eef1fbab;
+  --ui-surface: rgba(232, 236, 248, 0.82);
+  --ui-surface-strong: #edf1fb9f;
+  --ui-border: rgba(15, 23, 42, 0.12);
+  --ui-divider: rgba(15, 23, 42, 0.1);
   --ui-accent: #2563eb;
   --ui-accent-strong: #1d4ed8;
   --ui-accent-soft: rgba(37, 99, 235, 0.12);
@@ -19,7 +18,7 @@
 }
 
 body {
-  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #e0f2fe 100%);
+  background: linear-gradient(135deg, #edf1f99d 0%, #e1e6f6 45%, #f5f7fc 100%);
   color: var(--ui-text);
   font-family: "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
   margin: 0;
@@ -47,7 +46,7 @@ body::before {
 }
 
 body::after {
-  background: linear-gradient(120deg, rgba(255, 255, 255, 0.15), rgba(148, 163, 184, 0.08));
+  background: linear-gradient(120deg, rgba(236, 240, 255, 0.22), rgba(148, 163, 184, 0.12));
   mix-blend-mode: screen;
   opacity: 0.4;
   filter: blur(0.5px);
@@ -56,7 +55,7 @@ body::after {
 
 /* Header */
 .header-with-image {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.65) 100%);
+  background: linear-gradient(135deg, rgba(236, 240, 252, 0.9) 0%, rgba(222, 228, 244, 0.72) 100%);
   border-radius: 28px;
   padding: 40px 24px 32px;
   margin-bottom: 28px;
@@ -91,10 +90,6 @@ body::after {
 .header-image {
   width: 96px;
   height: 96px;
-  border-radius: 24px;
-  border: 2px solid rgba(37, 99, 235, 0.2);
-  background: rgba(255, 255, 255, 0.6);
-  box-shadow: 0 18px 35px rgba(37, 99, 235, 0.18);
   transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
 
@@ -214,7 +209,7 @@ body::after {
   margin: 0 auto;
   padding: 36px;
   border-radius: 28px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.78) 100%);
+  background: linear-gradient(145deg, rgba(235, 239, 250, 0.92) 0%, rgba(220, 226, 242, 0.78) 100%);
   border: 1px solid var(--ui-border);
   box-shadow: 0 32px 68px rgba(15, 23, 42, 0.16);
   backdrop-filter: blur(18px);
@@ -256,15 +251,12 @@ body::after {
 .footer-logo-mark {
   width: 64px;
   height: 64px;
-  border-radius: 18px;
-  background: #2564eb09 !important;
   color: var(--ui-accent-contrast);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 1.3rem;
-  box-shadow: 0 16px 30px #0f172a1f;
   letter-spacing: 0.08em;
 }
 
@@ -571,11 +563,14 @@ select:focus {
 }
 
 .modern-table {
+
   width: 100%;
-  border-collapse: collapse;
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 18px;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  margin: 0;
 }
 
 .modern-table thead {
@@ -781,7 +776,7 @@ select:focus {
 .message {
   border-radius: 18px;
   border: 1px solid var(--ui-divider);
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(234, 238, 250, 0.85);
   color: var(--ui-text);
   display: none;
 }
@@ -806,24 +801,21 @@ select:focus {
 
 /* Modals */
 .edit-modal-header {
-  background: rgba(248, 250, 252, 0.95);
+  background: rgba(231, 236, 248, 0.95);
   border-bottom: 1px solid var(--ui-divider);
   color: var(--ui-text);
 }
 
 .edit-modal-footer {
-  background: rgba(248, 250, 252, 0.9);
+  background: rgba(231, 236, 248, 0.9);
   border-top: 1px solid var(--ui-divider);
 }
 
-.car-details h4,
-.modern-image-section h4,
-.price-label {
-  color: var(--ui-text);
-}
+
+
 
 .modern-image-file-name {
-  background: rgba(248, 250, 252, 0.9);
+  background: rgba(231, 236, 248, 0.9);
   border: 1px solid var(--ui-divider);
   color: var(--ui-text-muted);
   border-radius: 12px;
@@ -849,18 +841,13 @@ select:focus {
   box-shadow: 0 20px 36px rgba(15, 23, 42, 0.12);
 }
 
-.modern-image-preview {
-  border: 1px dashed var(--ui-divider);
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 16px;
-}
 
 /* Dropdowns & lists */
 .model-dropdown.modern {
   border-radius: 16px;
   padding: 8px 0;
   border: 1px solid var(--ui-divider);
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(235, 239, 250, 0.95);
   box-shadow: 0 18px 32px rgba(15, 23, 42, 0.08);
 }
 
@@ -880,10 +867,11 @@ select:focus {
 .modern-tuning-container {
   border-radius: 18px;
   padding: 18px;
+  
 }
 
 .modern-tuning-option {
-  background: rgba(248, 250, 252, 0.95);
+  background: rgba(231, 236, 248, 0.95);
   border: 1px solid var(--ui-divider);
   color: var(--ui-text-muted);
   border-radius: 12px;
@@ -917,7 +905,7 @@ select:focus {
 }
 
 .badge-note-section {
-  background: rgba(248, 250, 252, 0.9);
+  background: rgba(231, 236, 248, 0.9);
   border-left: 4px solid rgba(37, 99, 235, 0.4);
   padding: 16px;
   border-radius: 16px;
@@ -985,4 +973,26 @@ select:focus {
     flex: 1 1 100%;
   }
 }
+.modern-form-card {
+  background: linear-gradient(145deg, rgba(235, 239, 250, 0.92) 0%, rgba(220, 226, 242, 0.78) 100%);
+  border-radius: 20px;
+  padding: 30px;
+  margin-bottom: 30px;
+  border: 1px solid var(--ui-border);
+  box-shadow: 0 32px 68px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(18px);
+  position: relative;
+  overflow: hidden;
+}
 
+
+
+.modern-form-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2, #4ecdc4, #45b7d1);
+}
