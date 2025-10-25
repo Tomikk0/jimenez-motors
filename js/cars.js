@@ -39,180 +39,139 @@ async function loadCars() {
 
 function renderCars(cars) {
   try {
-    const tbody = document.getElementById('carTableBody');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
+    const track = document.getElementById('carCardTrack');
+    if (!track) return;
+
+    track.innerHTML = '';
+
     if (!cars || cars.length === 0) {
-      const colCount = currentUser ? 10 : 8; // Vissza az eredeti oszlopszám
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="${colCount}" class="empty-table-message">
-            🚗 Nincsenek eladó autók<br>
-          </td>
-        </tr>
+      track.innerHTML = `
+        <div class="car-card empty">
+          <p>🚗 Jelenleg nincs eladó autó a listában.</p>
+        </div>
       `;
       return;
     }
-    
-    cars.forEach(c => {
-      const row = document.createElement('tr');
-      
-      // KÉP RÉSZ
-      let imageHtml = '';
-      let imageUrl = '';
 
+    cars.forEach(c => {
+      const card = document.createElement('article');
+      card.className = 'car-card';
+
+      let imageUrl = '';
       if (c.image_url && c.image_url.trim() !== '') {
         imageUrl = getImageUrl(c.image_url);
       } else if (c.image_data_url && c.image_data_url.trim() !== '') {
         imageUrl = c.image_data_url;
       }
 
-      if (imageUrl && !imageUrl.includes('undefined')) {
-        imageHtml = `
-          <td class="image-cell">
-            <img src="${imageUrl}" 
-                 class="modern-car-image" 
-                 onclick="showImageModal('${imageUrl.replace(/'/g, "\\'")}')"
-                 alt="${escapeHtml(c.Model || '')}">
-          </td>
-        `;
-      } else {
-        imageHtml = `
-          <td class="image-cell">
-            <div class="no-image-placeholder">
-              👁️<br>Nincs
-            </div>
-          </td>
-        `;
-      }
-      
-      // ÁRAK
+      const hasImage = imageUrl && !imageUrl.includes('undefined');
+
       const vetelAr = c.VetelArFormatted || '';
       const kivantAr = c.KivantArFormatted || '';
       const eladasiAr = c.EladasiArFormatted || '';
-      
-      // KÉSZPÉNZ ÁR számolása (eladási ár 93%-a)
+
       let keszpenzAr = '';
       if (c.EladasiAr && !isNaN(c.EladasiAr)) {
         const keszpenzErtek = Math.round(c.EladasiAr * 0.925);
         keszpenzAr = new Intl.NumberFormat('hu-HU').format(keszpenzErtek);
       }
-      
-      let vetelArCell = '';
-      let kivantArCell = '';
-      let keszpenzArCell = '';
-      
-      if (currentUser) {
-        vetelArCell = `<td class="price-cell price-purchase">${vetelAr ? vetelAr + ' $' : '-'}</td>`;
-        kivantArCell = `<td class="price-cell price-desired">${kivantAr ? kivantAr + ' $' : '-'}</td>`;
-        keszpenzArCell = '';
-      } else {
-        vetelArCell = '';
-        kivantArCell = '';
-        keszpenzArCell = `<td class="price-cell price-keszpenz price-keszpenz-cell">${keszpenzAr ? keszpenzAr + ' $' : '-'}</td>`;
-      }
-      
-      // STÁTUSZ - MINDIG "ELADÓ", MIVEL CSAK ELADÓ AUTÓK VANNAK
-      let statusCell = `
-        <td>
-          <span class="status-badge status-available">💰 ELADÓ</span>
-        </td>
-      `;
-      
-      // MŰVELET GOMBOK
-      let actionCell = '';
-      if (currentUser) {
-        const canDelete = (c.Hozzáadta === currentUser.tagName || currentUser.role === 'admin');
-        
-        let buttonsHtml = '';
-        
-        // MINDIG MEGJELENIK AZ "ELADVA" GOMB, MIVEL MINDEN AUTÓ ELADÓ
-        buttonsHtml += `<button class="modern-btn-sold" onclick="openSoldModal(${c.id})">Eladva</button>`;
-        
-        if (canDelete) {
-          buttonsHtml += `<button class="modern-btn-delete" onclick="deleteCar(${c.id})">❌ Törlés</button>`;
-        }
-        
-        actionCell = `
-          <td class="action-cell">
-            <div class="modern-action-buttons">
-              ${buttonsHtml}
-            </div>
-          </td>
-        `;
-      } else {
-        actionCell = '';
-      }
-      
-      // Hozzáadta oszlop - NAGY TELEFONSZÁMMAL
-      let hozzaadtaCell = '';
+
+      let sellerInfo = '';
       if (c.Hozzáadta) {
         const eladoTag = tagOptions.find(tag => tag.name === c.Hozzáadta);
         const telefonszam = eladoTag?.phone || '';
-        
+
         if (telefonszam) {
-          hozzaadtaCell = `
-            <td style="color: #4a5568;">
-              <div style="font-weight: 600;">${escapeHtml(c.Hozzáadta)}</div>
-              <div style="color: #4299e1; font-size: 1.3em; font-family: monospace; margin-top: 8px; font-weight: 700;">
-                📞 ${escapeHtml(telefonszam)}
-              </div>
-            </td>
+          sellerInfo = `
+            <div class="seller-contact">
+              <span class="seller-name">${escapeHtml(c.Hozzáadta)}</span>
+              <span class="seller-phone">📞 ${escapeHtml(telefonszam)}</span>
+            </div>
           `;
         } else {
-          hozzaadtaCell = `
-            <td style="color: #4a5568;">
-              <div style="font-weight: 600;">${escapeHtml(c.Hozzáadta)}</div>
-              <div style="color: #a0aec0; font-size: 0.9em; font-style: italic; margin-top: 4px;">
-                nincs telefonszám
-              </div>
-            </td>
+          sellerInfo = `
+            <div class="seller-contact">
+              <span class="seller-name">${escapeHtml(c.Hozzáadta)}</span>
+              <span class="seller-phone muted">nincs telefonszám</span>
+            </div>
           `;
         }
       } else {
-        hozzaadtaCell = `<td style="color: #4a5568;">-</td>`;
+        sellerInfo = `
+          <div class="seller-contact">
+            <span class="seller-name muted">Ismeretlen eladó</span>
+          </div>
+        `;
       }
-      
-      // SOR ÖSSZEÁLLÍTÁSA - STÁTUSZZAL
+
+      const adminButtons = [];
       if (currentUser) {
-        row.innerHTML = `
-          ${imageHtml}
-          <td style="font-weight: 600; color: #2d3748;">${escapeHtml(c.Model || '')}</td>
-          <td style="color: #718096; font-size: 0.9em;">${escapeHtml(c.Tuning || '-')}</td>
-          ${vetelArCell}
-          ${kivantArCell}
-          <td class="price-cell price-sale">${eladasiAr ? eladasiAr + ' $' : '-'}</td>
-          ${hozzaadtaCell}
-          ${statusCell}
-          ${actionCell}
-        `;
-      } else {
-        row.innerHTML = `
-          ${imageHtml}
-          <td style="font-weight: 600; color: #2d3748;">${escapeHtml(c.Model || '')}</td>
-          <td style="color: #718096; font-size: 0.9em;">${escapeHtml(c.Tuning || '-')}</td>
-          <td class="price-cell price-sale">${eladasiAr ? eladasiAr + ' $' : '-'}</td>
-          ${keszpenzArCell}
-          ${hozzaadtaCell}
-          ${statusCell}
-        `;
+        adminButtons.push(`<button class="pill-btn" onclick="openSoldModal(${c.id})">Eladva</button>`);
+
+        const canDelete = (c.Hozzáadta === currentUser.tagName || currentUser.role === 'admin');
+        if (canDelete) {
+          adminButtons.push(`<button class="pill-btn destructive" onclick="deleteCar(${c.id})">Törlés</button>`);
+        }
       }
-      
-      tbody.appendChild(row);
+
+      const pricingRows = currentUser
+        ? `
+            <div class="price-row">
+              <span class="price-label">Vételár</span>
+              <span class="price-value">${vetelAr ? vetelAr + ' $' : '-'}</span>
+            </div>
+            <div class="price-row">
+              <span class="price-label">Kívánt ár</span>
+              <span class="price-value">${kivantAr ? kivantAr + ' $' : '-'}</span>
+            </div>
+          `
+        : `
+            <div class="price-row">
+              <span class="price-label">Készpénz</span>
+              <span class="price-value">${keszpenzAr ? keszpenzAr + ' $' : '-'}</span>
+            </div>
+          `;
+
+      const statusBadge = `<span class="status-pill">Eladó</span>`;
+
+      card.innerHTML = `
+        <div class="car-media">
+          ${hasImage
+            ? `<img src="${imageUrl}" alt="${escapeHtml(c.Model || '')}" onclick="showImageModal('${imageUrl.replace(/'/g, "\\'")}')">`
+            : '<div class="car-media__placeholder">Nincs kép</div>'}
+        </div>
+        <div class="car-body">
+          <div class="car-header">
+            <h3>${escapeHtml(c.Model || '')}</h3>
+            ${statusBadge}
+          </div>
+          <p class="car-tuning">${escapeHtml(c.Tuning || 'Nincs tuning megadva')}</p>
+          <div class="price-block">
+            <div class="price-row main">
+              <span class="price-label">Eladási ár</span>
+              <span class="price-value">${eladasiAr ? eladasiAr + ' $' : '-'}</span>
+            </div>
+            ${pricingRows}
+          </div>
+        </div>
+        <div class="car-footer">
+          ${sellerInfo}
+          ${adminButtons.length ? `<div class="car-actions">${adminButtons.join('')}</div>` : ''}
+        </div>
+      `;
+
+      track.appendChild(card);
     });
   } catch (error) {
     console.error('renderCars hiba:', error);
-    const tbody = document.getElementById('carTableBody');
-    const colCount = currentUser ? 10 : 8; // Vissza az eredeti oszlopszám
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="${colCount}" style="text-align: center; color: #e53e3e; padding: 20px;">
-          ❌ Hiba történt az autók betöltése során
-        </td>
-      </tr>
-    `;
+    const track = document.getElementById('carCardTrack');
+    if (track) {
+      track.innerHTML = `
+        <div class="car-card error">
+          <p>❌ Hiba történt az autók betöltése során</p>
+        </div>
+      `;
+    }
   }
 }
 
@@ -270,6 +229,7 @@ async function addCar() {
       clearImage();
       loadCars();
       loadStats();
+      closeCarUploadModal();
     }
 
   } catch (error) {

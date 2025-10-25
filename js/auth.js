@@ -147,7 +147,10 @@ function updateUIForLoginState() {
   console.log('✅ UI frissítve, logged-in:', isLoggedIn, 'admin:', isAdminUser);
   
   const adminFunctions = document.getElementById('adminFunctions');
-  if (adminFunctions) adminFunctions.style.display = isLoggedIn ? 'block' : 'none';
+  if (adminFunctions) adminFunctions.style.display = isLoggedIn ? 'flex' : 'none';
+
+  const uploadFallback = document.getElementById('uploadCtaFallback');
+  if (uploadFallback) uploadFallback.style.display = isLoggedIn ? 'none' : 'block';
   
   const tagAdminFunctions = document.getElementById('tagAdminFunctions');
   if (tagAdminFunctions) tagAdminFunctions.style.display = isAdminUser ? 'block' : 'none';
@@ -164,10 +167,10 @@ function updateUIForLoginState() {
 
   document.querySelectorAll('.login-btn').forEach(btn => {
     if (isLoggedIn) {
-      btn.innerHTML = '🚪 Kijelentkezés (' + currentUser.tagName + ')';
+      btn.innerHTML = 'Kilépés (' + currentUser.tagName + ')';
       btn.onclick = logout;
     } else {
-      btn.innerHTML = '🔐 Bejelentkezés';
+      btn.innerHTML = 'Belépés';
       btn.onclick = () => showPage('login');
     }
   });
@@ -182,19 +185,11 @@ function updateUIForLoginState() {
     galleryActionHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
   }
   
-  const kivantHeader = document.getElementById('kivantHeader');
-  const actionHeader = document.getElementById('actionHeader');
-  const tagActionHeader = document.getElementById('tagActionHeader');
-  const vetelHeader = document.getElementById('vetelHeader');
-  const keszpenzHeader = document.getElementById('keszpenzHeader');
   const historyButton = document.getElementById('historyButton');
   const badgeButton = document.getElementById('badgeButton');
 
-  if (kivantHeader) kivantHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
-  if (actionHeader) actionHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
+  const tagActionHeader = document.getElementById('tagActionHeader');
   if (tagActionHeader) tagActionHeader.style.display = isAdminUser ? 'table-cell' : 'none';
-  if (vetelHeader) vetelHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
-  if (keszpenzHeader) keszpenzHeader.style.display = isLoggedIn ? 'none' : 'table-cell';
   
   if (historyButton) {
     historyButton.style.display = isAdminUser ? 'flex' : 'none';
