@@ -86,31 +86,22 @@ function renderCars(cars) {
           const telHref = telefonszam.replace(/[^+\d]/g, '');
           sellerInfo = `
             <div class="seller-contact">
-              <span class="seller-label">Kapcsolat</span>
-              <div class="seller-details">
-                <span class="seller-name">${escapeHtml(c.Hozzáadta)}</span>
-                <a class="seller-phone" href="tel:${escapeHtml(telHref)}">${escapeHtml(telefonszam)}</a>
-              </div>
+              <span class="seller-name">${escapeHtml(c.Hozzáadta)}</span>
+              <a class="seller-phone" href="tel:${escapeHtml(telHref)}">${escapeHtml(telefonszam)}</a>
             </div>
           `;
         } else {
           sellerInfo = `
             <div class="seller-contact">
-              <span class="seller-label">Kapcsolat</span>
-              <div class="seller-details">
-                <span class="seller-name">${escapeHtml(c.Hozzáadta)}</span>
-                <span class="seller-phone muted">nincs telefonszám</span>
-              </div>
+              <span class="seller-name">${escapeHtml(c.Hozzáadta)}</span>
+              <span class="seller-phone muted">nincs telefonszám</span>
             </div>
           `;
         }
       } else {
         sellerInfo = `
           <div class="seller-contact">
-            <span class="seller-label">Kapcsolat</span>
-            <div class="seller-details">
-              <span class="seller-name muted">Ismeretlen eladó</span>
-            </div>
+            <span class="seller-name muted">Ismeretlen eladó</span>
           </div>
         `;
       }
