@@ -193,7 +193,7 @@ async function confirmSaleWithEdit() {
 function openChangePasswordModal() {
     console.log('🔐 Jelszóváltoztatás modal megnyitása...');
     console.log('currentUser:', currentUser);
-    
+
     if (!currentUser) {
         console.log('❌ Nincs bejelentkezve!');
         showMessage('Előbb jelentkezz be!', 'warning');
@@ -526,3 +526,45 @@ function clearGalleryForm() {
   document.getElementById('galleryPrice').value = '';
   clearGalleryImage();
 }
+
+// === ÚJ AUTÓ FELTÖLTÉS MODERN MODAL ===
+function openCarUploadModal() {
+  const modal = document.getElementById('carUploadModal');
+  if (!modal) {
+    console.error('❌ carUploadModal nem található');
+    return;
+  }
+
+  modal.classList.add('is-visible');
+  modal.setAttribute('aria-hidden', 'false');
+
+  setTimeout(() => {
+    const modelInput = document.getElementById('modelSearch');
+    if (modelInput) {
+      modelInput.focus();
+    }
+  }, 200);
+}
+
+function closeCarUploadModal() {
+  const modal = document.getElementById('carUploadModal');
+  if (!modal) {
+    return;
+  }
+
+  modal.classList.remove('is-visible');
+  modal.setAttribute('aria-hidden', 'true');
+}
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    const modal = document.getElementById('carUploadModal');
+    if (modal && modal.classList.contains('is-visible')) {
+      closeCarUploadModal();
+    }
+  }
+});
+
+// Globális elérés biztosítása inline hívásokhoz
+window.openCarUploadModal = openCarUploadModal;
+window.closeCarUploadModal = closeCarUploadModal;
