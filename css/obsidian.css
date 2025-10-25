@@ -565,24 +565,65 @@ body.modern-theme .sale-form {
 
 .seller-contact {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: linear-gradient(135deg, rgba(10, 14, 28, 0.78), rgba(18, 22, 38, 0.78));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), 0 18px 36px rgba(2, 6, 16, 0.45);
+  flex-wrap: wrap;
+}
+
+.seller-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.62);
+}
+
+.seller-details {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .seller-name {
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--obsidian-text);
 }
 
 .seller-phone {
   color: var(--obsidian-highlight);
-  font-weight: 500;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.seller-phone::before {
+  content: '\1F4DE';
+  font-size: 0.9rem;
+}
+
+.seller-phone:hover,
+.seller-phone:focus-visible {
+  color: #fff;
+  text-decoration: underline;
 }
 
 .seller-phone.muted,
 .seller-name.muted {
   color: rgba(226, 232, 240, 0.45);
+}
+
+.seller-phone.muted::before {
+  content: none;
 }
 
 .car-actions {

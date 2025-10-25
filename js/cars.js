@@ -83,24 +83,34 @@ function renderCars(cars) {
         const telefonszam = eladoTag?.phone || '';
 
         if (telefonszam) {
+          const telHref = telefonszam.replace(/[^+\d]/g, '');
           sellerInfo = `
             <div class="seller-contact">
-              <span class="seller-name">${escapeHtml(c.Hozzáadta)}</span>
-              <span class="seller-phone">📞 ${escapeHtml(telefonszam)}</span>
+              <span class="seller-label">Kapcsolat</span>
+              <div class="seller-details">
+                <span class="seller-name">${escapeHtml(c.Hozzáadta)}</span>
+                <a class="seller-phone" href="tel:${escapeHtml(telHref)}">${escapeHtml(telefonszam)}</a>
+              </div>
             </div>
           `;
         } else {
           sellerInfo = `
             <div class="seller-contact">
-              <span class="seller-name">${escapeHtml(c.Hozzáadta)}</span>
-              <span class="seller-phone muted">nincs telefonszám</span>
+              <span class="seller-label">Kapcsolat</span>
+              <div class="seller-details">
+                <span class="seller-name">${escapeHtml(c.Hozzáadta)}</span>
+                <span class="seller-phone muted">nincs telefonszám</span>
+              </div>
             </div>
           `;
         }
       } else {
         sellerInfo = `
           <div class="seller-contact">
-            <span class="seller-name muted">Ismeretlen eladó</span>
+            <span class="seller-label">Kapcsolat</span>
+            <div class="seller-details">
+              <span class="seller-name muted">Ismeretlen eladó</span>
+            </div>
           </div>
         `;
       }

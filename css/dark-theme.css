@@ -30,7 +30,7 @@ body.modern-theme::after {
 }
 
 body.modern-theme .site-main {
-  max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
   position: relative;
   z-index: 1;
