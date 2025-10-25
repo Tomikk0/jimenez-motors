@@ -76,16 +76,24 @@
 
             <div id="message" class="message"></div>
 
-            <div class="car-carousel">
-              <div id="carCardTrack" class="car-card-track">
-                <div class="car-card placeholder-card">
-                  <p>Autók betöltése...</p>
+            <div class="car-carousel-wrapper">
+              <button type="button" class="carousel-btn prev" aria-label="Előző autók" data-carousel-control="-1">
+                <span aria-hidden="true">&#10094;</span>
+              </button>
+              <div class="car-carousel" id="carCarousel">
+                <div id="carCardTrack" class="car-card-track">
+                  <div class="car-card placeholder-card">
+                    <p>Autók betöltése...</p>
+                  </div>
                 </div>
               </div>
+              <button type="button" class="carousel-btn next" aria-label="Következő autók" data-carousel-control="1">
+                <span aria-hidden="true">&#10095;</span>
+              </button>
             </div>
           </section>
 
-          <section class="upload-section glass-card">
+          <section id="uploadSection" class="upload-section glass-card" style="display: none;">
             <div class="section-heading">
               <h2>Új autó feltöltése</h2>
               <p>Őrizd meg a készlet naprakészségét egy kattintással.</p>
@@ -94,9 +102,7 @@
               <button type="button" class="accent-btn" onclick="openCarUploadModal()">Feltöltés</button>
               <button type="button" class="ghost-btn" onclick="loadCars()">Lista frissítése</button>
             </div>
-            <div class="upload-cta" id="uploadCtaFallback">
-              <p>Jelentkezz be, hogy új autót rögzíthess.</p>
-            </div>
+            <div class="upload-cta" id="uploadCtaFallback" style="display: none;"></div>
           </section>
         </div>
       </section>
@@ -844,7 +850,7 @@
         <div class="edit-modal-body">
           <div id="changePasswordMessage" class="message"></div>
 
-          <div class="sale-form">
+          <div class="sale-form sale-form--with-summary">
             <div class="form-group">
               <label for="currentPassword">🔒 Jelenlegi jelszó</label>
               <input type="password" id="currentPassword" class="modern-input" placeholder="Add meg a jelenlegi jelszavad" autocomplete="current-password">
@@ -898,57 +904,61 @@
           </div>
 
           <div class="sale-form">
-            <div class="form-group">
-              <label>💰 Eladás típusa</label>
-              <div class="sale-type-selector">
-                <label class="sale-type-option sale-type-option--cash">
-                  <input type="radio" name="saleType" value="kp" id="saleTypeKp" checked onchange="updateProfitCalculator()">
-                  <div class="sale-type-card">
-                    <div class="sale-type-title">💵 Készpénz</div>
-                    <div class="sale-type-subtitle">Nincs adó</div>
-                  </div>
-                </label>
-                <label class="sale-type-option sale-type-option--normal">
-                  <input type="radio" name="saleType" value="normal" id="saleTypeNormal" onchange="updateProfitCalculator()">
-                  <div class="sale-type-card">
-                    <div class="sale-type-title">🏪 Normál</div>
-                    <div class="sale-type-subtitle">-7.5% adó</div>
-                  </div>
-                </label>
+            <div class="sale-form-main">
+              <div class="form-group">
+                <label>💰 Eladás típusa</label>
+                <div class="sale-type-selector">
+                  <label class="sale-type-option sale-type-option--cash">
+                    <input type="radio" name="saleType" value="kp" id="saleTypeKp" checked onchange="updateProfitCalculator()">
+                    <div class="sale-type-card">
+                      <div class="sale-type-title">💵 Készpénz</div>
+                      <div class="sale-type-subtitle">Nincs adó</div>
+                    </div>
+                  </label>
+                  <label class="sale-type-option sale-type-option--normal">
+                    <input type="radio" name="saleType" value="normal" id="saleTypeNormal" onchange="updateProfitCalculator()">
+                    <div class="sale-type-card">
+                      <div class="sale-type-title">🏪 Normál</div>
+                      <div class="sale-type-subtitle">-7.5% adó</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="editSalePrice">💵 Eladási ár</label>
+                <div class="price-input-container">
+                  <input type="text" id="editSalePrice" placeholder="0" maxlength="15" oninput="formatInputPrice(this); updateProfitCalculator();">
+                </div>
+                <div class="price-hint">Írd be az árat, automatikusan formázódik</div>
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="editSalePrice">💵 Eladási ár</label>
-              <div class="price-input-container">
-                <input type="text" id="editSalePrice" placeholder="0" maxlength="15" oninput="formatInputPrice(this); updateProfitCalculator();">
+            <aside class="sale-form-summary">
+              <div class="profit-calc" id="profitCalc">
+                <div class="profit-header">📊 Profit számítás</div>
+                <div class="profit-row">
+                  <span>Vételiár:</span>
+                  <span id="calcPurchase">0 $</span>
+                </div>
+                <div class="profit-row">
+                  <span>Eladási ár:</span>
+                  <span id="calcSale">0 $</span>
+                </div>
+                <div class="profit-row" id="taxLabel" style="display: none;">
+                  <span>Adó (7.5%):</span>
+                  <span id="calcTax">0 $</span>
+                </div>
+                <div class="profit-row" id="netSaleLabel" style="display: none;">
+                  <span>Nettó ár:</span>
+                  <span id="calcNetSale">0 $</span>
+                </div>
+                <div class="profit-row total">
+                  <span>Eredmény:</span>
+                  <span id="calcProfit">0 $</span>
+                </div>
               </div>
-              <div class="price-hint">Írd be az árat, automatikusan formázódik</div>
-            </div>
-
-            <div class="profit-calc" id="profitCalc">
-              <div class="profit-header">📊 Profit számítás</div>
-              <div class="profit-row">
-                <span>Vételiár:</span>
-                <span id="calcPurchase">0 $</span>
-              </div>
-              <div class="profit-row">
-                <span>Eladási ár:</span>
-                <span id="calcSale">0 $</span>
-              </div>
-              <div class="profit-row" id="taxLabel" style="display: none;">
-                <span>Adó (7.5%):</span>
-                <span id="calcTax">0 $</span>
-              </div>
-              <div class="profit-row" id="netSaleLabel" style="display: none;">
-                <span>Nettó ár:</span>
-                <span id="calcNetSale">0 $</span>
-              </div>
-              <div class="profit-row total">
-                <span>Eredmény:</span>
-                <span id="calcProfit">0 $</span>
-              </div>
-            </div>
+            </aside>
           </div>
         </div>
 

@@ -50,6 +50,7 @@ function renderCars(cars) {
           <p>🚗 Jelenleg nincs eladó autó a listában.</p>
         </div>
       `;
+      setupCarCarouselInteractions();
       return;
     }
 
@@ -162,6 +163,7 @@ function renderCars(cars) {
 
       track.appendChild(card);
     });
+    setupCarCarouselInteractions();
   } catch (error) {
     console.error('renderCars hiba:', error);
     const track = document.getElementById('carCardTrack');
@@ -172,8 +174,106 @@ function renderCars(cars) {
         </div>
       `;
     }
+    setupCarCarouselInteractions();
   }
 }
+
+function setupCarCarouselInteractions() {
+  const carousel = document.getElementById('carCarousel');
+  if (!carousel) return;
+
+  const controls = document.querySelectorAll('[data-carousel-control]');
+
+  const updateButtons = () => {
+    const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth;
+    const atStart = carousel.scrollLeft <= 2;
+    const atEnd = carousel.scrollLeft >= maxScrollLeft - 2;
+
+    controls.forEach(btn => {
+      const direction = parseInt(btn.dataset.carouselControl || '0', 10);
+      if (direction < 0) {
+        btn.disabled = atStart;
+        btn.classList.toggle('disabled', atStart);
+      } else if (direction > 0) {
+        btn.disabled = atEnd;
+        btn.classList.toggle('disabled', atEnd);
+      }
+    });
+  };
+
+  if (!carousel.dataset.enhanced) {
+    carousel.dataset.enhanced = 'true';
+
+    let isPointerDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+
+    const onPointerDown = (clientX) => {
+      isPointerDown = true;
+      startX = clientX;
+      scrollLeft = carousel.scrollLeft;
+      carousel.classList.add('is-dragging');
+    };
+
+    const onPointerMove = (clientX, event) => {
+      if (!isPointerDown) return;
+      event.preventDefault();
+      const walk = clientX - startX;
+      carousel.scrollLeft = scrollLeft - walk;
+    };
+
+    const stopPointer = () => {
+      if (!isPointerDown) return;
+      isPointerDown = false;
+      carousel.classList.remove('is-dragging');
+    };
+
+    carousel.addEventListener('mousedown', (event) => {
+      onPointerDown(event.pageX);
+    });
+
+    carousel.addEventListener('mousemove', (event) => {
+      onPointerMove(event.pageX, event);
+    });
+
+    carousel.addEventListener('mouseleave', stopPointer);
+    document.addEventListener('mouseup', stopPointer);
+
+    carousel.addEventListener('touchstart', (event) => {
+      if (!event.touches || !event.touches.length) return;
+      onPointerDown(event.touches[0].pageX);
+    }, { passive: true });
+
+    carousel.addEventListener('touchmove', (event) => {
+      if (!event.touches || !event.touches.length) return;
+      onPointerMove(event.touches[0].pageX, event);
+    }, { passive: false });
+
+    carousel.addEventListener('touchend', stopPointer);
+    carousel.addEventListener('touchcancel', stopPointer);
+
+    controls.forEach(btn => {
+      if (btn.dataset.bound === 'true') return;
+      btn.addEventListener('click', () => {
+        const direction = parseInt(btn.dataset.carouselControl || '0', 10);
+        if (!direction) return;
+        const offset = direction * Math.max(320, carousel.clientWidth * 0.8);
+        carousel.scrollBy({ left: offset, behavior: 'smooth' });
+      });
+      btn.dataset.bound = 'true';
+    });
+
+    carousel.addEventListener('scroll', () => {
+      window.requestAnimationFrame(updateButtons);
+    });
+
+    window.addEventListener('resize', updateButtons);
+  }
+
+  updateButtons();
+}
+
+document.addEventListener('DOMContentLoaded', setupCarCarouselInteractions);
 
 async function addCar() {
   try {

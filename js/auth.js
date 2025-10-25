@@ -150,7 +150,10 @@ function updateUIForLoginState() {
   if (adminFunctions) adminFunctions.style.display = isLoggedIn ? 'flex' : 'none';
 
   const uploadFallback = document.getElementById('uploadCtaFallback');
-  if (uploadFallback) uploadFallback.style.display = isLoggedIn ? 'none' : 'block';
+  if (uploadFallback) uploadFallback.style.display = 'none';
+
+  const uploadSection = document.getElementById('uploadSection');
+  if (uploadSection) uploadSection.style.display = isLoggedIn ? 'block' : 'none';
   
   const tagAdminFunctions = document.getElementById('tagAdminFunctions');
   if (tagAdminFunctions) tagAdminFunctions.style.display = isAdminUser ? 'block' : 'none';
