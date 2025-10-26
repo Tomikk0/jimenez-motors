@@ -98,7 +98,11 @@ function handleImageSelect(event) {
     return;
   }
 
-  document.getElementById('imageFileName').textContent = file.name;
+  const fileNameEl = document.getElementById('imageFileName');
+  if (fileNameEl) {
+    fileNameEl.textContent = 'Kép kiválasztva';
+    fileNameEl.classList.add('selected');
+  }
 
   const reader = new FileReader();
   reader.onload = function(e) {
@@ -117,7 +121,11 @@ function handleImageSelect(event) {
 
 function clearImage() {
   document.getElementById('carImage').value = '';
-  document.getElementById('imageFileName').textContent = 'Nincs kép kiválasztva';
+  const fileNameEl = document.getElementById('imageFileName');
+  if (fileNameEl) {
+    fileNameEl.textContent = 'Nincs kép kiválasztva';
+    fileNameEl.classList.remove('selected');
+  }
   document.getElementById('imagePreview').innerHTML = '';
   selectedImage = null;
 }
@@ -137,7 +145,11 @@ function handleGalleryImageSelect(event) {
     return;
   }
 
-  document.getElementById('galleryImageFileName').textContent = file.name;
+  const galleryFileNameEl = document.getElementById('galleryImageFileName');
+  if (galleryFileNameEl) {
+    galleryFileNameEl.textContent = 'Kép kiválasztva';
+    galleryFileNameEl.classList.add('selected');
+  }
 
   const reader = new FileReader();
   reader.onload = function(e) {
@@ -154,7 +166,11 @@ function handleGalleryImageSelect(event) {
 
 function clearGalleryImage() {
   document.getElementById('galleryCarImage').value = '';
-  document.getElementById('galleryImageFileName').textContent = 'Nincs kép kiválasztva';
+  const galleryFileNameEl = document.getElementById('galleryImageFileName');
+  if (galleryFileNameEl) {
+    galleryFileNameEl.textContent = 'Nincs kép kiválasztva';
+    galleryFileNameEl.classList.remove('selected');
+  }
   document.getElementById('galleryImagePreview').innerHTML = '';
   gallerySelectedImage = null;
 }
@@ -355,13 +371,26 @@ function onGalleryModelSelected(model) {
 // Inputok törlése
 function clearInputs() {
   try {
-    document.getElementById('modelSearch').value = '';
-    document.getElementById('vetel').value = '';
-    document.getElementById('kivant').value = '';
-    document.getElementById('eladas').value = '';
-    document.getElementById('newTag').value = '';
+    const modelSearch = document.getElementById('modelSearch');
+    if (modelSearch) modelSearch.value = '';
+
+    const vetel = document.getElementById('vetel');
+    if (vetel) vetel.value = '';
+
+    const kivant = document.getElementById('kivant');
+    if (kivant) kivant.value = '';
+
+    const eladas = document.getElementById('eladas');
+    if (eladas) eladas.value = '';
+
+    const newTagInput = document.getElementById('newTag');
+    if (newTagInput) newTagInput.value = '';
+
     document.querySelectorAll('.modern-tuning-option').forEach(div => div.classList.remove('selected'));
-    document.getElementById('modelDropdown').style.display = 'none';
+
+    const modelDropdown = document.getElementById('modelDropdown');
+    if (modelDropdown) modelDropdown.style.display = 'none';
+
     clearImage();
   } catch (error) {
     console.error('clearInputs hiba:', error);
@@ -394,13 +423,13 @@ function showLoadingState() {
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(255,255,255,0.9);
+      background: rgba(5, 6, 10, 0.85);
       display: flex;
       justify-content: center;
       align-items: center;
       z-index: 9999;
       font-size: 1.2em;
-      color: #333;
+      color: #f8fafc;
     ">
       <div style="text-align: center;">
         <div style="font-size: 2em; margin-bottom: 10px;">⏳</div>

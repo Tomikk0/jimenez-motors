@@ -1,6 +1,61 @@
 // DEBUG: Ellenőrizzük, hogy a függvények elérhetőek-e
 console.log('✅ modals.js betöltődött');
 
+function openAddCarModal() {
+  if (!currentUser) {
+    showMessage('Előbb jelentkezz be!', 'warning');
+    return;
+  }
+
+  const modal = document.getElementById('addCarModal');
+  if (!modal) return;
+
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('modal-open');
+
+  setTimeout(() => {
+    const modelInput = document.getElementById('modelSearch');
+    if (modelInput) {
+      modelInput.focus();
+    }
+  }, 200);
+}
+
+function closeAddCarModal(options = {}) {
+  const modal = document.getElementById('addCarModal');
+  if (!modal) return;
+
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('modal-open');
+
+  const modelDropdown = document.getElementById('modelDropdown');
+  if (modelDropdown) {
+    modelDropdown.style.display = 'none';
+  }
+
+  const preserveForm = options?.preserveForm ?? false;
+
+  if (!preserveForm) {
+    if (typeof clearInputs === 'function') {
+      clearInputs();
+    }
+    if (typeof clearImage === 'function') {
+      clearImage();
+    }
+  }
+}
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    const modal = document.getElementById('addCarModal');
+    if (modal && modal.classList.contains('open')) {
+      closeAddCarModal();
+    }
+  }
+});
+
 // Eladás modal bezárása
 function closeEditModal() {
   console.log('🔒 closeEditModal meghívva');
