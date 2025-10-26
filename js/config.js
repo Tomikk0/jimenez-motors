@@ -1,7 +1,8 @@
-// === SUPABASE KAPCSOLAT === 
-const supabaseUrl = 'https://abpmluenermqghrrtjhq.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFicG1sdWVuZXJtcWdocnJ0amhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3MTYzMjgsImV4cCI6MjA3NjI5MjMyOH0.YkTZME_BB86r3mM8AyNYu-2yaMdh4LtDhHbynvdkaKA';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+// === API KAPCSOLAT ===
+// Állítsd be a backend API elérhetőségét. Ha szeretnéd felülírni futásidőben,
+// adj meg egy window.API_BASE_URL változót az oldal betöltése előtt.
+const API_BASE_URL = (window.API_BASE_URL || 'http://localhost:8787/api').replace(/\/$/, '');
+const supabase = window.createApiClient(API_BASE_URL);
 
 // Globális változók
 let tuningOptions = [];
