@@ -148,7 +148,15 @@ function updateUIForLoginState() {
   
   const adminFunctions = document.getElementById('adminFunctions');
   if (adminFunctions) adminFunctions.style.display = isLoggedIn ? 'block' : 'none';
-  
+
+  const addCarButton = document.getElementById('openAddCarModalBtn');
+  if (addCarButton) {
+    addCarButton.style.display = isLoggedIn ? 'inline-flex' : 'none';
+    if (!isLoggedIn && typeof closeAddCarModal === 'function') {
+      closeAddCarModal({ preserveForm: false });
+    }
+  }
+
   const tagAdminFunctions = document.getElementById('tagAdminFunctions');
   if (tagAdminFunctions) tagAdminFunctions.style.display = isAdminUser ? 'block' : 'none';
   
