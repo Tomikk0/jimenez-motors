@@ -30,29 +30,50 @@ class NeonQueryBuilder {
     this.filters = [];
     this.orders = [];
     this.expect = 'many';
+    this.shouldReturn = false;
+    this.returningColumns = null;
     this.executionPromise = null;
   }
 
   select(columns = '*') {
-    this.action = 'select';
-    this.columns = columns;
+    if (!this.action) {
+      this.action = 'select';
+      this.columns = columns;
+    } else if (['insert', 'update', 'delete'].includes(this.action)) {
+      this.shouldReturn = true;
+      this.returningColumns = columns || '*';
+    } else {
+      this.columns = columns;
+    }
     return this;
   }
 
   insert(values) {
     this.action = 'insert';
     this.payload = Array.isArray(values) ? values : [values];
-    return this._execute();
+    this.shouldReturn = true;
+    if (!this.returningColumns) {
+      this.returningColumns = '*';
+    }
+    return this;
   }
 
   update(values) {
     this.action = 'update';
     this.payload = values || {};
+    this.shouldReturn = true;
+    if (!this.returningColumns) {
+      this.returningColumns = '*';
+    }
     return this;
   }
 
   delete() {
     this.action = 'delete';
+    this.shouldReturn = true;
+    if (!this.returningColumns) {
+      this.returningColumns = '*';
+    }
     return this;
   }
 
@@ -111,7 +132,8 @@ class NeonQueryBuilder {
           payload: this.payload,
           filters: this.filters,
           orders: this.orders,
-          expect: this.expect
+          expect: this.expect,
+          returning: this.shouldReturn ? (this.returningColumns || '*') : null
         })
       });
 

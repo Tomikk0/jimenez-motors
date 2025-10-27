@@ -22,7 +22,8 @@ export default async function handler(req, res) {
       payload = null,
       filters = [],
       orders = [],
-      expect = 'many'
+      expect = 'many',
+      returning = null
     } = req.body || {};
 
     if (!table || !action) {
@@ -30,7 +31,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    const { text, values } = buildSql({ table, action, columns, payload, filters, orders });
+    const { text, values } = buildSql({ table, action, columns, payload, filters, orders, returning });
     const rows = await sql.unsafe(text, values);
 
     const { data, error } = formatResult(rows, expect);
@@ -46,7 +47,7 @@ export default async function handler(req, res) {
   }
 }
 
-function buildSql({ table, action, columns, payload, filters, orders }) {
+function buildSql({ table, action, columns, payload, filters, orders, returning }) {
   const values = [];
   const quotedTable = quoteIdentifier(table);
   const whereClauses = filters.map(filter => buildFilter(filter, values));
@@ -77,7 +78,7 @@ function buildSql({ table, action, columns, payload, filters, orders }) {
         }).join(', ')})`;
       }).join(', ');
 
-      text = `INSERT INTO ${quotedTable} (${quotedColumns}) VALUES ${valueRows} RETURNING *`;
+      text = `INSERT INTO ${quotedTable} (${quotedColumns}) VALUES ${valueRows}`;
       break;
     }
     case 'update': {
@@ -112,11 +113,24 @@ function buildSql({ table, action, columns, payload, filters, orders }) {
     text += ` ORDER BY ${orderClause}`;
   }
 
-  if (action === 'update' || action === 'delete') {
-    text += ' RETURNING *';
+  if (['insert', 'update', 'delete'].includes(action)) {
+    text += buildReturningClause(action, returning);
   }
 
   return { text, values };
+}
+
+function buildReturningClause(action, returning) {
+  if (!['insert', 'update', 'delete'].includes(action)) {
+    return '';
+  }
+
+  if (returning === null || returning === 'minimal') {
+    return '';
+  }
+
+  const columnList = returning && returning !== '*' ? formatColumns(returning) : '*';
+  return ` RETURNING ${columnList}`;
 }
 
 function buildFilter(filter, values) {
