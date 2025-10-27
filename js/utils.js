@@ -44,8 +44,14 @@ function getImageUrl(imagePath) {
     return '';
   }
   
-  const finalUrl = `${supabaseUrl}/storage/v1/object/public/car-images/${imagePath}`;
-  console.log('✅ Supabase URL:', finalUrl);
+  if (!storageBaseUrl) {
+    console.warn('⚠️ Nincs beállítva tárhely URL. Add meg a storageBaseUrl értékét a config.js fájlban.');
+    return '';
+  }
+
+  const normalizedBase = storageBaseUrl.replace(/\/$/, '');
+  const finalUrl = `${normalizedBase}/storage/v1/object/public/car-images/${imagePath}`;
+  console.log('✅ Tárhely URL:', finalUrl);
   return finalUrl;
 }
 
