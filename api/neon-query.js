@@ -1,7 +1,29 @@
 import { neon } from '@neondatabase/serverless';
 
-const connectionString = process.env.NEON_DATABASE_URL;
-const sql = connectionString ? neon(connectionString) : null;
+const resolveConnectionString = () => {
+  return (
+    process.env.NEON_DATABASE_URL ||
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL ||
+    null
+  );
+};
+
+let cachedSql = null;
+
+const getSqlClient = () => {
+  const connectionString = resolveConnectionString();
+  if (!connectionString) {
+    return null;
+  }
+
+  if (!cachedSql) {
+    cachedSql = neon(connectionString);
+  }
+
+  return cachedSql;
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -9,8 +31,15 @@ export default async function handler(req, res) {
     return;
   }
 
+  const sql = getSqlClient();
+
   if (!sql) {
-    res.status(200).json({ data: null, error: { message: 'A NEON_DATABASE_URL környezeti változó nincs beállítva.' } });
+    res.status(200).json({
+      data: null,
+      error: {
+        message: 'A Neon adatbázishoz állíts be egy NEON_DATABASE_URL (vagy DATABASE_URL/POSTGRES_URL) környezeti változót.'
+      }
+    });
     return;
   }
 
