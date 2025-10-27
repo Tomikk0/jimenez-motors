@@ -1,0 +1,10 @@
+{
+  "name": "jimenez-motors",
+  "version": "1.0.0",
+  "description": "Jimenez Motors admin felület Neon adatbázissal",
+  "type": "module",
+  "scripts": {},
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.3"
+  }
+}
