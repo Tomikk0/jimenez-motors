@@ -6,7 +6,7 @@
       this.operation = null;
       this.columns = '*';
       this.filters = [];
-      this.order = [];
+      this.orderBy = [];
       this.payload = null;
       this.singleResult = false;
       this.returning = false;
@@ -47,7 +47,7 @@
     }
 
     order(column, options = {}) {
-      this.order.push({ column, ascending: options.ascending !== false });
+      this.orderBy.push({ column, ascending: options.ascending !== false });
       return this;
     }
 
@@ -81,7 +81,7 @@
           data: this.payload,
           columns: this.columns,
           filters: this.filters,
-          order: this.order,
+          order: this.orderBy,
           single: this.singleResult,
           returning: this.returning,
           limit: this.limitValue
