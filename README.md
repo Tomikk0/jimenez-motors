@@ -11,6 +11,7 @@ Ez a kiadás a Supabase függőséget eltávolítja, és helyette egy saját, PH
 2. **API telepítése**
    - Másold a projektet a webszerver gyökérkönyvtárába.
    - Győződj meg róla, hogy az `api/` mappában lévő PHP fájlok elérhetőek, és a szerver képes PDO-val csatlakozni a MariaDB-hez.
+   - Nincs külön szolgáltatás, amit el kell indítani: az `api/index.php` fájl minden HTTP kérésre az Apache/PHP pároson keresztül fut le.
 
 3. **Képfájlok**
    - A projekt a `uploads/` mappát használja lokális képfájlok kiszolgálására.
@@ -23,3 +24,17 @@ Ez a kiadás a Supabase függőséget eltávolítja, és helyette egy saját, PH
 ## Frontend
 
 A JavaScript kód a `js/databaseClient.js` fájlban definiált klienssel kommunikál az `api/index.php` végponttal. A hívások a korábbi Supabase szintaxisát követik (`supabase.from('tabla').select().eq()`), így a meglévő üzleti logika változtatás nélkül használható.
+
+### Kapcsolódás ellenőrzése
+
+1. Frissítsd a `js/config.js` fájlban az `apiBaseUrl` értékét, ha nem a webszerver gyökeréből szolgálod ki a projektet.
+2. Egy terminálból futtatható `curl` hívással ellenőrizheted, hogy az API elérhető-e:
+
+   ```bash
+   curl -X POST \
+     -H "Content-Type: application/json" \
+     -d '{"table":"cars","action":"select","limit":1}' \
+     https://sajat-doma.in/api/index.php
+   ```
+
+   Siker esetén JSON formátumban jelenik meg a lekérdezés eredménye. Ha hibát kapsz, ellenőrizd az adatbázis-hitelesítő adatokat és hogy a webszerver hozzáfér-e a MariaDB-hez.
