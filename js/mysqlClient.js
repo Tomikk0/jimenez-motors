@@ -10,7 +10,7 @@
 
     async _post(payload) {
       try {
-        const response = await fetch(`${this.baseUrl}/query`, {
+        const response = await fetch(`${this.baseUrl}/query.php`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
