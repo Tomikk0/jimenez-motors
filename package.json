@@ -1,0 +1,9 @@
+{
+  "name": "jimenez-motors",
+  "version": "1.1.0",
+  "description": "Jimenez Motors management portal with MariaDB backend",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  }
+}

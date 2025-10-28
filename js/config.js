@@ -1,7 +1,6 @@
-// === SUPABASE KAPCSOLAT === 
-const supabaseUrl = 'https://abpmluenermqghrrtjhq.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFicG1sdWVuZXJtcWdocnJ0amhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3MTYzMjgsImV4cCI6MjA3NjI5MjMyOH0.YkTZME_BB86r3mM8AyNYu-2yaMdh4LtDhHbynvdkaKA';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+// === MARIA DB KAPCSOLAT ===
+const apiBaseUrl = (window.APP_CONFIG && window.APP_CONFIG.apiBaseUrl) || '/api';
+const supabase = new MariaDBClient(apiBaseUrl);
 
 // Globális változók
 let tuningOptions = [];

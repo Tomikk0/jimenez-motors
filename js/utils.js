@@ -22,31 +22,26 @@ function formatInputPrice(input) {
 }
 
 function getImageUrl(imagePath) {
-  console.log('🔗 Kép URL generálás:', imagePath);
-  
   if (!imagePath) {
-    console.log('❌ Nincs kép path');
     return '';
   }
-  
+
   if (imagePath.startsWith('http')) {
-    console.log('✅ HTTP URL');
     return imagePath;
   }
-  
+
   if (imagePath.startsWith('data:image')) {
-    console.log('✅ Base64 kép');
     return imagePath;
   }
-  
+
   if (imagePath.includes('undefined')) {
-    console.log('❌ Undefined kép');
     return '';
   }
-  
-  const finalUrl = `${supabaseUrl}/storage/v1/object/public/car-images/${imagePath}`;
-  console.log('✅ Supabase URL:', finalUrl);
-  return finalUrl;
+
+  const normalized = imagePath.replace(/^\/+/, '');
+  const base = (apiBaseUrl || '').replace(/\/api$/, '');
+  const prefix = base === '' ? '' : `${base.replace(/\/$/, '')}/`;
+  return `${prefix}${normalized}`;
 }
 
 // Üzenet funkciók
