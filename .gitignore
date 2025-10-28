@@ -1,0 +1,8 @@
+node_modules/
+.env
+.env.local
+.vscode/
+.idea/
+.DS_Store
+npm-debug.log*
+api/config.php

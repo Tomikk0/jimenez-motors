@@ -44,9 +44,16 @@ function getImageUrl(imagePath) {
     return '';
   }
   
-  const finalUrl = `${supabaseUrl}/storage/v1/object/public/car-images/${imagePath}`;
-  console.log('✅ Supabase URL:', finalUrl);
-  return finalUrl;
+  if (typeof storageBaseUrl === 'string' && storageBaseUrl.trim() !== '') {
+    const base = storageBaseUrl.replace(/\/$/, '');
+    const normalizedPath = imagePath.replace(/^\//, '');
+    const finalUrl = `${base}/${normalizedPath}`;
+    console.log('✅ Külső tároló URL:', finalUrl);
+    return finalUrl;
+  }
+
+  console.log('ℹ️ Alapértelmezett kép útvonal visszaadva');
+  return imagePath;
 }
 
 // Üzenet funkciók
