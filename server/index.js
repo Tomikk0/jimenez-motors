@@ -4,7 +4,27 @@ const fs = require('fs');
 const { URL } = require('url');
 const { spawn } = require('child_process');
 
+ensureWorkingDirectory();
+
 loadEnv();
+
+function ensureWorkingDirectory() {
+  try {
+    process.cwd();
+  } catch (error) {
+    if (error && error.code === 'ENOENT') {
+      const fallback = path.resolve(__dirname, '..');
+      try {
+        process.chdir(fallback);
+        console.warn('Working directory was missing; switched to', fallback);
+      } catch (chdirError) {
+        console.error('Failed to recover working directory:', chdirError.message);
+      }
+    } else {
+      console.error('Unexpected error while reading working directory:', error.message);
+    }
+  }
+}
 
 const PORT = Number(process.env.PORT || 3000);
 const MYSQL_CMD = process.env.MYSQL_CLIENT || 'mysql';
