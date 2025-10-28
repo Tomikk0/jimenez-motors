@@ -56,3 +56,25 @@ Az új `MariaDBClient` segédosztály a korábbi Supabase hívásokhoz hasonló 
 ## Build és deploy
 
 A projekt jelenleg egy egyszerű Node.js szerverből és statikus frontendből áll. Deploy során győződj meg róla, hogy a MariaDB adatbázis elérhető a szerver számára, és a `.env` fájl tartalmazza a megfelelő hitelesítési adatokat.
+
+## Hibakeresés
+
+### `ERROR 1698 (28000): Access denied for user 'root'@'localhost'`
+
+- Ez a hiba azt jelzi, hogy a megadott adatbázis felhasználó nem rendelkezik jelszóval vagy hálózati hozzáféréssel az adott gazdagépről.
+- Hozz létre egy dedikált, jelszóval védett felhasználót, majd add meg ezt az `.env` fájlban:
+
+  ```sql
+  CREATE USER 'jimenez_app'@'%' IDENTIFIED BY 'erős_jelszó';
+  GRANT ALL PRIVILEGES ON jimenez_motors.* TO 'jimenez_app'@'%';
+  FLUSH PRIVILEGES;
+  ```
+
+- Frissítsd a `.env` fájlt:
+
+  ```ini
+  MARIADB_USER=jimenez_app
+  MARIADB_PASSWORD=erős_jelszó
+  ```
+
+- Ezt követően indítsd újra a szervert (`npm run start`), hogy az új hitelesítési adatok érvényesüljenek.

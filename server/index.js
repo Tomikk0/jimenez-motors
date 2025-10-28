@@ -74,7 +74,8 @@ const server = http.createServer(async (req, res) => {
       const result = await handleQuery(body);
       sendJson(res, 200, { data: result.data, error: null });
     } catch (error) {
-      console.error('Database error:', error);
+      const logDetails = error && error.details ? `${error.message} (${error.details})` : error;
+      console.error('Database error:', logDetails);
       const status = error.statusCode || 400;
       sendJson(res, status, { data: null, error: { message: error.message } });
     }
@@ -497,7 +498,7 @@ async function runMysql(sql, options = {}) {
     child.on('close', (code) => {
       if (code !== 0) {
         const message = stderr.trim() || `mysql exited with code ${code}`;
-        reject(createHttpError(500, message));
+        reject(normalizeMysqlError(message));
         return;
       }
 
@@ -513,6 +514,22 @@ async function runMysql(sql, options = {}) {
       }
     });
   });
+}
+
+function normalizeMysqlError(message) {
+  const trimmed = String(message || '').trim();
+  if (/Access denied for user/i.test(trimmed) || /ERROR\s+1698\s*\(28000\)/i.test(trimmed)) {
+    const error = createHttpError(
+      401,
+      'Database authentication failed. Check your MARIADB_USER and MARIADB_PASSWORD values or create a dedicated MariaDB user with remote access.'
+    );
+    error.details = trimmed;
+    return error;
+  }
+
+  const error = createHttpError(500, trimmed || 'Unknown database error');
+  error.details = trimmed;
+  return error;
 }
 
 function parseMysqlOutput(output) {
