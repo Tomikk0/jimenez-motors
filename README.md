@@ -6,41 +6,29 @@ Ez a projekt a Jimenez Motors kereskedés adminisztrációs felülete. A korább
 
 - Node.js 18+
 - MariaDB 10.5+ adatbázis
+- A MariaDB kliens parancs (`mysql`) elérhető legyen a PATH-ban
 
 ## Fejlesztői környezet beállítása
 
-1. **Függőségek telepítése**
-
-   ```bash
-   npm install
-   ```
-
-2. **Adatbázis konfigurálása**
+1. **Adatbázis konfigurálása**
 
    - Hozz létre egy MariaDB adatbázist (pl. `jimenez_motors`).
    - Hozd létre a szükséges táblákat (cars, members, app_users, member_history, badges, tuning_options, car_models).
    - A képek tárolásához a rendszer továbbra is az adatbázisban tárolt base64 mezőket használja (`image_data_url`).
 
-3. **Konfiguráció**
+2. **Konfiguráció**
 
    - Másold az `.env.example` fájlt `.env` néven.
-   - Állítsd be az adatbázis eléréséhez szükséges változókat.
+   - Állítsd be az adatbázis eléréséhez szükséges változókat. Ha a `mysql` parancs nem a PATH-ban található, add meg a `MYSQL_CLIENT` változóban az elérési utat.
+   - A `REQUEST_LIMIT` byte-ban értendő (alapértelmezés: 15 728 640 ≈ 15 MB).
 
-4. **Szerver indítása**
+3. **Szerver indítása**
 
    ```bash
    npm run start
    ```
 
-   A szerver alapértelmezés szerint a `3000`-es porton indul el, kiszolgálja a statikus fájlokat és az `/api/query` végpontot.
-
-5. **Fejlesztői mód**
-
-   ```bash
-   npm run dev
-   ```
-
-   A `nodemon` automatikusan újraindítja a szervert fájlmódosítás esetén.
+   A szerver alapértelmezés szerint a `3000`-es porton indul el, kiszolgálja a statikus fájlokat és az `/api/query` végpontot. Nincs szükség külső Node modulok telepítésére.
 
 ## Frontend konfiguráció
 
