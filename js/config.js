@@ -1,7 +1,12 @@
-// === SUPABASE KAPCSOLAT === 
-const supabaseUrl = 'https://abpmluenermqghrrtjhq.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFicG1sdWVuZXJtcWdocnJ0amhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3MTYzMjgsImV4cCI6MjA3NjI5MjMyOH0.YkTZME_BB86r3mM8AyNYu-2yaMdh4LtDhHbynvdkaKA';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+// === ADATBÁZIS KONFIGURÁCIÓ ===
+const databaseConfig = {
+  apiBaseUrl: '/api/index.php',
+  imageBaseUrl: '/uploads'
+};
+
+const supabase = createDatabaseClient(databaseConfig.apiBaseUrl);
+window.supabase = supabase;
+window.databaseConfig = databaseConfig;
 
 // Globális változók
 let tuningOptions = [];
