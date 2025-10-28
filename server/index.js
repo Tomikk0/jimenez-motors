@@ -48,6 +48,8 @@ const allowedTables = new Set([
   'car_models'
 ]);
 
+const columnAliases = loadColumnAliases();
+
 const rootDir = path.resolve(__dirname, '..');
 
 const server = http.createServer(async (req, res) => {
@@ -255,11 +257,11 @@ async function handleQuery(body) {
     throw createHttpError(400, 'Invalid table requested');
   }
 
-  const sanitizedColumns = sanitizeColumns(columns);
+  const sanitizedColumns = sanitizeColumns(table, columns);
   switch (operation) {
     case 'select': {
-      const whereClause = buildWhereClause(filters);
-      const orderClause = buildOrderClause(order);
+      const whereClause = buildWhereClause(table, filters);
+      const orderClause = buildOrderClause(table, order);
       let query = `SELECT ${sanitizedColumns} FROM \`${table}\``;
       if (whereClause) {
         query += ` ${whereClause}`;
@@ -282,7 +284,7 @@ async function handleQuery(body) {
       if (keys.length === 0) {
         throw createHttpError(400, 'Insert payload must contain at least one column');
       }
-      const sanitizedKeys = keys.map((key) => `\`${sanitizeIdentifier(key)}\``);
+      const sanitizedKeys = keys.map((key) => `\`${resolveColumn(table, key)}\``);
       const valuesClause = data
         .map((row) => `(${keys.map((key) => escapeValue(row[key])).join(', ')})`)
         .join(', ');
@@ -304,14 +306,14 @@ async function handleQuery(body) {
       if (!Array.isArray(filters) || filters.length === 0) {
         throw createHttpError(400, 'Update operations require at least one filter');
       }
-      const setClauses = Object.entries(data).map(([key, value]) => `\`${sanitizeIdentifier(key)}\` = ${escapeValue(value)}`);
-      const whereClause = buildWhereClause(filters);
+      const setClauses = Object.entries(data).map(([key, value]) => `\`${resolveColumn(table, key)}\` = ${escapeValue(value)}`);
+      const whereClause = buildWhereClause(table, filters);
       const updateSql = `UPDATE \`${table}\` SET ${setClauses.join(', ')} ${whereClause}; SELECT ROW_COUNT() AS affected;`;
       const resultSets = await runMysql(updateSql, { multi: true });
       const affected = readAffectedRows(resultSets);
 
       if (returning) {
-        const orderClause = buildOrderClause(order);
+        const orderClause = buildOrderClause(table, order);
         let selectSql = `SELECT ${sanitizedColumns} FROM \`${table}\` ${whereClause}`;
         if (orderClause) {
           selectSql += ` ${orderClause}`;
@@ -326,7 +328,7 @@ async function handleQuery(body) {
       if (!Array.isArray(filters) || filters.length === 0) {
         throw createHttpError(400, 'Delete operations require at least one filter');
       }
-      const whereClause = buildWhereClause(filters);
+      const whereClause = buildWhereClause(table, filters);
       const deleteSql = `DELETE FROM \`${table}\` ${whereClause}; SELECT ROW_COUNT() AS affected;`;
       const resultSets = await runMysql(deleteSql, { multi: true });
       const affected = readAffectedRows(resultSets);
@@ -339,7 +341,8 @@ async function handleQuery(body) {
 
 async function fetchRecentRows(table, columns, count) {
   const limitValue = Math.max(Number(count) || 1, 1);
-  const query = `SELECT ${columns} FROM \`${table}\` ORDER BY \`id\` DESC LIMIT ${limitValue}`;
+  const idColumn = resolveColumn(table, 'id');
+  const query = `SELECT ${columns} FROM \`${table}\` ORDER BY \`${idColumn}\` DESC LIMIT ${limitValue}`;
   const rows = await runMysql(query);
   return rows.reverse();
 }
@@ -354,7 +357,7 @@ function sanitizeIdentifier(identifier) {
   return identifier;
 }
 
-function sanitizeColumns(columnString) {
+function sanitizeColumns(table, columnString) {
   if (!columnString || columnString.trim() === '' || columnString.trim() === '*') {
     return '*';
   }
@@ -362,16 +365,16 @@ function sanitizeColumns(columnString) {
     .split(',')
     .map((col) => col.trim())
     .filter(Boolean)
-    .map((col) => `\`${sanitizeIdentifier(col)}\``);
+    .map((col) => `\`${resolveColumn(table, col)}\``);
   return columns.join(', ');
 }
 
-function buildWhereClause(filters = []) {
+function buildWhereClause(table, filters = []) {
   if (!Array.isArray(filters) || filters.length === 0) {
     return '';
   }
   const clauses = filters.map((filter) => {
-    const column = sanitizeIdentifier(filter.column);
+    const column = resolveColumn(table, filter.column);
     switch (filter.operator) {
       case 'eq':
         return `\`${column}\` = ${escapeValue(filter.value)}`;
@@ -382,15 +385,33 @@ function buildWhereClause(filters = []) {
   return `WHERE ${clauses.join(' AND ')}`;
 }
 
-function buildOrderClause(order = []) {
+function buildOrderClause(table, order = []) {
   if (!Array.isArray(order) || order.length === 0) {
     return '';
   }
   const clauses = order.map(({ column, ascending }) => {
-    const col = sanitizeIdentifier(column);
+    const col = resolveColumn(table, column);
     return `\`${col}\` ${ascending === false ? 'DESC' : 'ASC'}`;
   });
   return `ORDER BY ${clauses.join(', ')}`;
+}
+
+function resolveColumn(table, column) {
+  const actual = applyColumnAlias(table, column);
+  return sanitizeIdentifier(actual);
+}
+
+function applyColumnAlias(table, column) {
+  if (typeof column !== 'string') {
+    throw createHttpError(400, 'Invalid identifier');
+  }
+  const tableKey = String(table || '').toLowerCase();
+  const columnKey = column.toLowerCase();
+  const tableAliases = columnAliases[tableKey];
+  if (tableAliases && tableAliases[columnKey]) {
+    return tableAliases[columnKey];
+  }
+  return column;
 }
 
 function escapeValue(value) {
@@ -410,6 +431,31 @@ function escapeValue(value) {
     .replace(/\\/g, '\\\\')
     .replace(/'/g, "\\'");
   return `'${str}'`;
+}
+
+function loadColumnAliases() {
+  const aliases = {};
+  const prefix = 'COLUMN_ALIAS_';
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!key.startsWith(prefix) || !value) {
+      continue;
+    }
+    const remainder = key.slice(prefix.length);
+    const separatorIndex = remainder.indexOf('__');
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const table = remainder.slice(0, separatorIndex).toLowerCase();
+    const requested = remainder.slice(separatorIndex + 2).toLowerCase();
+    if (!table || !requested) {
+      continue;
+    }
+    if (!aliases[table]) {
+      aliases[table] = {};
+    }
+    aliases[table][requested] = value;
+  }
+  return aliases;
 }
 
 async function runMysql(sql, options = {}) {
