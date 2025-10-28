@@ -1,38 +1,62 @@
 # Jimenez Motors
 
-Ez a projekt egy modernített Jimenez Motors admin felület, amely InfinityFree (vagy bármely PHP + MySQL tárhely) környezetben is futtatható. A korábbi Supabase és Node.js/Express megoldás helyett egy egyszerű PHP API szolgálja ki a MySQL adatbázist, így a kód gond nélkül használható a shared hosting szolgáltatóknál is.
+Ez a projekt egy modernizált Jimenez Motors admin felület, amely PHP-alapú backenddel kommunikál
+MariaDB / MySQL adatbázissal. A kód gond nélkül futtatható saját VPS-en (Apache vagy Nginx + PHP
+kiszolgálással), ahol az adatbázist tipikusan MariaDB biztosítja és phpMyAdminnal felügyelheted.
 
 ## Projekt felépítése
 
 - `index.html` – a fő felhasználói felület.
 - `css/` – stílusok.
 - `js/` – kliensoldali logika (a Supabase helyett egy MySQL kliens adaptert használ).
-- `api/` – PHP végpontok az adatbázis műveletekhez (InfinityFree kompatibilis megoldás).
+- `api/` – PHP végpontok az adatbázis műveletekhez.
+- `mysql/` – opcionális sémák és segédfájlok az adatbázis létrehozásához.
 
-## Beállítás
+## Gyors beállítás VPS-en (MariaDB + phpMyAdmin)
 
-1. **PHP konfiguráció létrehozása**
-   - Lépj az `api/` mappába, és másold át a `config.sample.php` fájlt `config.php` néven.
-   - Töltsd ki a saját InfinityFree adatbázis elérési adataiddal (`host`, `username`, `password`, `database`). InfinityFree esetén a vezérlőpultban találod meg a `sqlXXX.infinityfree.com` hostot és a felhasználóneveket.
-   - Ha szeretnéd korlátozni, hogy mely domainekről érhető el az API, a `allowed_origins` mezőben add meg a jóváhagyott hostokat. Alapértelmezés szerint minden origin engedélyezett.
+1. **Szerverkörnyezet előkészítése**
+   - Telepítsd a PHP 8.0 vagy újabb verzióját a szükséges kiterjesztésekkel (`pdo_mysql`, `mysqli`).
+   - Gondoskodj róla, hogy a webszerver (Apache/Nginx) az alkalmazás könyvtárát szolgálja ki.
 
-2. **Fájlok feltöltése InfinityFree-ra**
-   - Töltsd fel a teljes projektet (beleértve az `api/` mappát is) az InfinityFree fájlkezelőjébe vagy FTP-n keresztül a webes gyökérkönyvtáradba (`htdocs`).
-   - Győződj meg róla, hogy a `config.php` nem nyilvános verziókezelésben, hanem csak a szerveren szerepel, és tartalmazza a helyes adatokat.
+2. **Fájlok átmásolása**
+   - Másold fel a repository tartalmát a webszerver gyökérkönyvtárába (pl. `/var/www/html/jimenez-motors`).
+   - Ügyelj arra, hogy az `api/` mappa is a szerveren legyen, mivel ez szolgálja ki a MySQL műveleteket.
 
-3. **MySQL adatbázis előkészítése**
-   - Hozd létre a szükséges adatbázist és táblákat az InfinityFree MySQL kezelőfelületén (phpMyAdmin).
-   - A `mysql/schema.sql` fájl minta sémát tartalmaz; importálhatod közvetlenül phpMyAdminból, vagy a saját sémád szerint állíthatod be a táblákat.
+3. **Konfiguráció létrehozása**
+   - Lépj az `api/` könyvtárba, és másold át a `config.sample.php` fájlt `config.php` néven.
+   - Állítsd be benne a MariaDB elérési adatokat (`host`, `username`, `password`, `database`).
+   - Ha a szerver unix sockettel kommunikál (pl. `/run/mysqld/mysqld.sock`), töltsd ki a `socket` mezőt;
+     ellenkező esetben hagyd üresen, és a `host`/`port` párossal kapcsolódik a kliens.
+   - Igény esetén add meg a `allowed_origins` listát a CORS korlátozásához.
 
-4. **API működésének ellenőrzése**
-   - Nyisd meg a böngészőben a `https://sajat-domainod.com/api/health.php` címet. A `{"status":"ok"}` válasz jelzi, hogy a PHP API sikeresen kapcsolódik az adatbázishoz.
-   - Ha hibát látsz, ellenőrizd a `config.php`-ban megadott hitelesítő adatokat és az adatbázis jogosultságait.
+4. **Adatbázis létrehozása és jogosultságok**
+   - phpMyAdminban vagy a `mysql` kliensben hozz létre egy adatbázist (pl. `jimenez_motors`).
+   - Adj megfelelő jogosultságokat a konfigurációban megadott felhasználónak:
+     ```sql
+     CREATE USER 'jimenez'@'localhost' IDENTIFIED BY 'erős_jelszó';
+     GRANT ALL PRIVILEGES ON jimenez_motors.* TO 'jimenez'@'localhost';
+     FLUSH PRIVILEGES;
+     ```
 
-5. **Kliens konfiguráció**
-   - A `js/config.js` fájlban állítható az `apiBaseUrl` (alapból `window.location.origin + '/api'`). Amennyiben az API másik domainen fut, állítsd be a `window.__API_BASE_URL__` globális változót az `index.html`-ben.
+5. **Séma importálása**
+   - A `mysql/schema.sql` fájl mintatáblákat tartalmaz; phpMyAdminból vagy a CLI-ről importálhatod.
+   - Természetesen használhatod a saját sémád is, ha eltérő adatszerkezetre van szükséged.
 
-6. **Távoli elérés tesztelése**
-   - A kliens a Supabase-szerű hívásokat továbbra is támogatja; például a `supabase.from('cars').select('*')` hívás mostantól az `api/query.php` végpontra továbbítja a kérést.
+6. **API működésének ellenőrzése**
+   - Böngészőben vagy `curl`-lal nyisd meg a `https://sajat-domainod.hu/api/health.php` címet.
+   - A `{"status":"ok"}` válasz jelzi, hogy a PHP API sikeresen kapcsolódik a MariaDB adatbázishoz.
+   - Hiba esetén ellenőrizd a `config.php`-ban szereplő hitelesítő adatokat és a jogosultságokat.
+
+7. **Frontend konfiguráció**
+   - A `js/config.js` fájlban az `apiBaseUrl` alapértelmezetten az aktuális domain `/api` útvonalára mutat.
+   - Ha az API és a frontend külön domainen fut, állítsd be a `window.__API_BASE_URL__` globális változót az
+     `index.html`-ben vagy a weboldalad sablonjában.
+
+## InfinityFree vagy más megosztott tárhely
+
+A kód továbbra is használható klasszikus shared hostingon. Ilyenkor is hozd létre a `config.php` fájlt,
+majd töltsd ki a szolgáltató (pl. InfinityFree) által megadott host/port/felhasználó adatokkal. A működés
+ugyanaz, mint VPS-en, csupán a hitelesítő adatok és az elérés módja tér el.
 
 ## Lekérdezési API
 
@@ -58,18 +82,22 @@ A PHP szerver minden lekérdezést az `/api/query.php` végponton fogad JSON for
 }
 ```
 
-Támogatott műveletek: `select`, `insert`, `update`, `delete`. A `select` esetében a `single: true` mezővel kérhető egyetlen sor. Az `insert` művelet a `returning` mezővel adja vissza az új sorokat (`.insert([...]).select()` a kliens oldalon). Az InfinityFree-n futó MySQL is támogatja a visszaolvasást, feltéve hogy az `id` mezők AUTO_INCREMENT beállításúak.
+Támogatott műveletek: `select`, `insert`, `update`, `delete`. A `select` esetében a `single: true` mezővel
+kérhető egyetlen sor. Az `insert` művelet a `returning` mezővel adja vissza az új sorokat (`.insert([...]).select()`
+a kliens oldalon). A MariaDB auto-increment kulcsokra támaszkodva kérdezi vissza a frissen beszúrt rekordokat.
 
 ## Korlátozások
 
-- A MySQL séma létrehozása és migrációja manuális feladat, a repository nem tartalmaz komplett SQL migrációkat.
-- A PHP API jelenleg `eq` típusú szűrést támogat; további feltételeket igény szerint bővíthetsz az `api/query.php` fájlban.
-- Az `INSERT ... RETURNING` MySQL-ben továbbra sem érhető el, ezért a szerver a növekvő azonosítók alapján kérdezi vissza az új rekordokat. Ez feltételezi, hogy a táblák AUTO_INCREMENT `id` mezőt használnak.
+- A séma létrehozása és migrációja manuális feladat, a repository nem tartalmaz komplett SQL migrációkat.
+- Az API jelenleg `eq` típusú szűrést támogat; további operátorokat igény szerint bővíthetsz az `api/query.php` fájlban.
+- Az `INSERT ... RETURNING` továbbra sem érhető el MySQL/MariaDB rendszerekben, ezért a szerver a növekvő
+  azonosítók alapján kérdezi vissza az új rekordokat. Ehhez az `id` mezőknek AUTO_INCREMENT attribútummal kell rendelkezniük.
 
 ## Fejlesztői tippek
 
-- A kliensoldali kód a `supabase` változóval dolgozik; ez mostantól a PHP/MySQL API klienst jelöli.
+- A kliensoldali kód a `supabase` változóra hivatkozik; ez mostantól a PHP/MySQL API klienst jelöli.
 - A képek URL-jeihez az opcionális `storageBaseUrl` globális változó használható (`window.__STORAGE_BASE_URL__`).
-- Ha tesztelni szeretnéd a kapcsolatot lokálisan, indíts egy beépített PHP szervert (`php -S localhost:8000`) a projekt gyökeréből, majd használd a saját MySQL példányodhoz igazított `config.php`-t.
+- Lokális teszteléshez indíthatod a beépített PHP szervert (`php -S localhost:8000`) a projekt gyökeréből, majd használj
+  helyi MariaDB példányt a `config.php`-ban megadott hitelesítő adatokkal.
 
-Jó munkát a további fejlesztéshez!
+Sok sikert a telepítéshez és a további fejlesztéshez!

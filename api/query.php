@@ -74,16 +74,28 @@ function createConnection(array $config): PDO
     $port = (int)($config['port'] ?? 3306);
     $db = $config['database'] ?? '';
     $charset = $config['charset'] ?? 'utf8mb4';
+    $socket = trim((string)($config['socket'] ?? ''));
+    $options = $config['options'] ?? [];
 
     if ($db === '') {
         throw new RuntimeException('A konfigurációban add meg az adatbázis nevét.');
     }
 
-    $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $db, $charset);
+    if (!is_array($options)) {
+        throw new RuntimeException('Az "options" mezőnek tömbnek kell lennie.');
+    }
 
-    return new PDO($dsn, $config['username'] ?? '', $config['password'] ?? '', [
+    if ($socket !== '') {
+        $dsn = sprintf('mysql:unix_socket=%s;dbname=%s;charset=%s', $socket, $db, $charset);
+    } else {
+        $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $db, $charset);
+    }
+
+    $defaultOptions = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-    ]);
+    ];
+
+    return new PDO($dsn, $config['username'] ?? '', $config['password'] ?? '', $defaultOptions + $options);
 }
 
 function executeQuery(PDO $pdo, array $payload)
