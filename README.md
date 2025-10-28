@@ -38,3 +38,21 @@ A JavaScript kód a `js/databaseClient.js` fájlban definiált klienssel kommuni
    ```
 
    Siker esetén JSON formátumban jelenik meg a lekérdezés eredménye. Ha hibát kapsz, ellenőrizd az adatbázis-hitelesítő adatokat és hogy a webszerver hozzáfér-e a MariaDB-hez.
+
+## Oszlopnevek illesztése
+
+A frontend a korábbi Supabase séma szerint `name`, `created_at`, `username` stb. mezőneveket vár. Ha a MariaDB-ben ettől eltérő (például magyar) oszlopnevek találhatók, add meg a megfeleltetést az `api/config.php` fájl `column_aliases` szekciójában:
+
+```php
+'column_aliases' => [
+    'members' => [
+        'name' => 'nev',
+        'created_at' => 'letrehozva'
+    ],
+    'app_users' => [
+        'username' => 'felhasznalonev'
+    ]
+],
+```
+
+Az API automatikusan kezeli néhány gyakori szinonimát (`name` ⇔ `nev`, `username` ⇔ `felhasznalonev`, `created_at` ⇔ `letrehozva`), de eltérő mezőelnevezések esetén mindig állíts be explicit aliasokat, hogy az összes lekérdezés és rendezés hibamentesen fusson.

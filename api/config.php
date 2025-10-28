@@ -6,5 +6,13 @@ return [
     'database' => getenv('DB_DATABASE') ?: 'jimenez_motors',
     'username' => getenv('DB_USERNAME') ?: 'root',
     'password' => getenv('DB_PASSWORD') ?: '',
-    'charset' => 'utf8mb4'
+    'charset' => 'utf8mb4',
+    'column_aliases' => [
+        // Példa aliasok: a bal oldalon a frontend által használt oszlopnév,
+        // a jobb oldalon az adatbázisban ténylegesen létező oszlop.
+        // 'members' => [
+        //     'name' => 'nev',
+        //     'created_at' => 'letrehozva'
+        // ],
+    ],
 ];

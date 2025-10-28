@@ -14,6 +14,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $config = require __DIR__ . '/config.php';
 
+const GLOBAL_COLUMN_SYNONYMS = [
+    'name' => ['nev', 'név', 'tag_nev', 'tagnev', 'modell', 'modellnev', 'modell_nev', 'model', 'modelnev', 'model_name'],
+    'username' => ['felhasznalonev', 'felhasznalo_nev', 'usernev', 'user_name', 'login', 'loginnev', 'login_name'],
+    'created_at' => ['letrehozva', 'letrehozas', 'letrehozas_datuma', 'letrehozva_datum', 'rogzitve', 'rogzitve_datum', 'keszites_datuma', 'datum', 'created'],
+];
+
+$columnAliasConfig = prepareColumnAliasConfig($config['column_aliases'] ?? []);
+$resolvedColumnMap = initializeResolvedColumnMap($columnAliasConfig);
+
 try {
     $dsn = sprintf(
         'mysql:host=%s;port=%s;dbname=%s;charset=%s',
@@ -100,43 +109,46 @@ function handleSelect(PDO $pdo, string $table, array $input): void
 
     $columnList = '*';
     if ($columns !== '*') {
-        $columnNames = array_map('trim', explode(',', (string) $columns));
-        $columnIdentifiers = array_map('quoteIdentifier', $columnNames);
-        $columnList = implode(', ', $columnIdentifiers);
+        $columnNames = array_filter(array_map('trim', explode(',', (string) $columns)), 'strlen');
+
+        if ($columnNames) {
+            $selectParts = [];
+
+            foreach ($columnNames as $columnName) {
+                if ($columnName === '*') {
+                    $selectParts = ['*'];
+                    break;
+                }
+
+                [$actualColumn, $alias] = resolveColumn($pdo, $table, $columnName);
+                $columnIdentifier = quoteIdentifier($actualColumn);
+
+                if ($actualColumn !== $alias) {
+                    $selectParts[] = sprintf('%s AS %s', $columnIdentifier, quoteIdentifier($alias));
+                } else {
+                    $selectParts[] = $columnIdentifier;
+                }
+            }
+
+            if ($selectParts && $selectParts[0] !== '*') {
+                $columnList = implode(', ', $selectParts);
+            }
+        }
     }
 
     $sql = sprintf('SELECT %s FROM %s', $columnList, quoteIdentifier($table));
     $params = [];
 
-    if ($filters) {
-        $whereParts = [];
-        foreach ($filters as $filter) {
-            if (!isset($filter['column'], $filter['operator'])) {
-                continue;
-            }
-
-            $column = quoteIdentifier((string) $filter['column']);
-            $operator = strtolower((string) $filter['operator']);
-            $placeholder = ':' . uniqid('p', false);
-
-            switch ($operator) {
-                case 'eq':
-                    $whereParts[] = sprintf('%s = %s', $column, $placeholder);
-                    $params[$placeholder] = $filter['value'] ?? null;
-                    break;
-                default:
-                    throw new InvalidArgumentException('Nem támogatott szűrő operátor: ' . $operator);
-            }
-        }
-
-        if ($whereParts) {
-            $sql .= ' WHERE ' . implode(' AND ', $whereParts);
-        }
+    [$whereSql, $whereParams] = buildWhereClause($pdo, $table, $filters);
+    if ($whereSql !== '') {
+        $sql .= ' WHERE ' . $whereSql;
+        $params = array_merge($params, $whereParams);
     }
 
     if ($order && isset($order['column'])) {
+        [$orderColumn] = resolveColumn($pdo, $table, (string) $order['column']);
         $direction = ($order['ascending'] ?? true) ? 'ASC' : 'DESC';
-        $sql .= ' ORDER BY ' . quoteIdentifier((string) $order['column']) . ' ' . $direction;
+        $sql .= ' ORDER BY ' . quoteIdentifier($orderColumn) . ' ' . $direction;
     }
 
     if (is_numeric($limit)) {
@@ -156,6 +168,7 @@ function handleSelect(PDO $pdo, string $table, array $input): void
 
     $statement->execute();
     $rows = $statement->fetchAll();
+    $rows = array_map(fn(array $row) => applyAliasesToRow($row, $table), $rows);
 
     if ($single) {
         $row = $rows[0] ?? null;
@@ -188,7 +201,12 @@ function handleInsert(PDO $pdo, string $table, array $input): void
             continue;
         }
 
-        $columns = array_keys($record);
+        $mappedRecord = mapRecordForWrite($pdo, $table, $record);
+        if (!$mappedRecord) {
+            continue;
+        }
+
+        $columns = array_keys($mappedRecord);
         $placeholders = array_map(fn($column) => ':' . $column, $columns);
         $columnIdentifiers = array_map('quoteIdentifier', $columns);
 
@@ -201,17 +219,19 @@ function handleInsert(PDO $pdo, string $table, array $input): void
 
         $statement = $pdo->prepare($sql);
 
-        foreach ($record as $column => $value) {
+        foreach ($mappedRecord as $column => $value) {
             $statement->bindValue(':' . $column, $value);
         }
 
         $statement->execute();
 
+        $outputRecord = $mappedRecord;
         if ($pdo->lastInsertId()) {
-            $record['id'] = (int) $pdo->lastInsertId();
+            $outputRecord['id'] = (int) $pdo->lastInsertId();
         }
 
-        $inserted[] = filterRecordColumns($record, $returning);
+        $outputRecord = applyAliasesToRow($outputRecord, $table);
+        $inserted[] = filterRecordColumns($outputRecord, $returning);
     }
 
     echo json_encode(['data' => $inserted]);
@@ -237,13 +257,19 @@ function handleUpdate(PDO $pdo, string $table, array $input): void
     $setParts = [];
     $params = [];
 
-    foreach ($data as $column => $value) {
+    $mappedData = mapRecordForWrite($pdo, $table, $data);
+    if (!$mappedData) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Nincs frissíthető oszlop.']);
+        return;
+    }
+    foreach ($mappedData as $column => $value) {
         $placeholder = ':' . uniqid('set', false);
-        $setParts[] = quoteIdentifier((string) $column) . ' = ' . $placeholder;
+        $setParts[] = quoteIdentifier($column) . ' = ' . $placeholder;
         $params[$placeholder] = $value;
     }
 
-    [$whereSql, $whereParams] = buildWhereClause($filters);
+    [$whereSql, $whereParams] = buildWhereClause($pdo, $table, $filters);
     if ($whereSql === '') {
         http_response_code(400);
         echo json_encode(['error' => 'Érvényes szűrő nélkül nem hajtható végre frissítés.']);
@@ -278,7 +304,7 @@ function handleDelete(PDO $pdo, string $table, array $input): void
         return;
     }
 
-    [$whereSql, $params] = buildWhereClause($filters);
+    [$whereSql, $params] = buildWhereClause($pdo, $table, $filters);
     if ($whereSql === '') {
         http_response_code(400);
         echo json_encode(['error' => 'Érvényes szűrő nélkül nem hajtható végre törlés.']);
@@ -297,7 +323,7 @@ function handleDelete(PDO $pdo, string $table, array $input): void
     echo json_encode(['data' => ['affectedRows' => $statement->rowCount()]]);
 }
 
-function buildWhereClause(array $filters): array
+function buildWhereClause(PDO $pdo, string $table, array $filters): array
 {
     $whereParts = [];
     $params = [];
@@ -307,7 +333,8 @@ function buildWhereClause(array $filters): array
             continue;
         }
 
-        $column = quoteIdentifier((string) $filter['column']);
+        [$actualColumn] = resolveColumn($pdo, $table, (string) $filter['column']);
+        $column = quoteIdentifier($actualColumn);
         $operator = strtolower((string) $filter['operator']);
         $placeholder = ':' . uniqid('w', false);
 
@@ -326,7 +353,11 @@ function buildWhereClause(array $filters): array
 
 function quoteIdentifier(string $identifier): string
 {
-    if (!preg_match('/^[A-Za-z0-9_]+$/', $identifier)) {
+    if ($identifier === '*') {
+        return '*';
+    }
+
+    if (!preg_match('/^[\p{L}\p{N}_]+$/u', $identifier)) {
         throw new InvalidArgumentException('Érvénytelen oszlopnév: ' . $identifier);
     }
 
@@ -352,4 +383,262 @@ function filterRecordColumns(array $record, $returning)
     }
 
     return $filtered;
+}
+
+function prepareColumnAliasConfig(array $config): array
+{
+    $prepared = [];
+
+    foreach ($config as $table => $aliases) {
+        if (!is_array($aliases)) {
+            continue;
+        }
+
+        $tableKey = lowercase_key($table);
+
+        foreach ($aliases as $alias => $actual) {
+            if (!is_string($alias) || $alias === '' || !is_string($actual) || $actual === '') {
+                continue;
+            }
+
+            $prepared[$tableKey][lowercase_key($alias)] = [
+                'alias' => $alias,
+                'actual' => $actual,
+            ];
+        }
+    }
+
+    return $prepared;
+}
+
+function initializeResolvedColumnMap(array $columnAliasConfig): array
+{
+    $resolved = [];
+
+    foreach ($columnAliasConfig as $tableKey => $aliases) {
+        foreach ($aliases as $aliasKey => $info) {
+            $resolved[$tableKey][$aliasKey] = [
+                'alias' => $info['alias'],
+                'actual' => $info['actual'],
+            ];
+        }
+    }
+
+    return $resolved;
+}
+
+function rememberResolvedAlias(string $table, string $alias, string $actual): void
+{
+    global $resolvedColumnMap;
+
+    $tableKey = lowercase_key($table);
+    $aliasKey = lowercase_key($alias);
+
+    if (!isset($resolvedColumnMap[$tableKey][$aliasKey])) {
+        $resolvedColumnMap[$tableKey][$aliasKey] = [
+            'alias' => $alias,
+            'actual' => $actual,
+        ];
+
+        return;
+    }
+
+    $resolvedColumnMap[$tableKey][$aliasKey]['alias'] = $alias;
+    $resolvedColumnMap[$tableKey][$aliasKey]['actual'] = $actual;
+}
+
+function getConfiguredAlias(string $table, string $alias): ?string
+{
+    global $columnAliasConfig;
+
+    $tableKey = lowercase_key($table);
+    $aliasKey = lowercase_key($alias);
+
+    return $columnAliasConfig[$tableKey][$aliasKey]['actual'] ?? null;
+}
+
+function resolveColumn(PDO $pdo, string $table, string $requested): array
+{
+    $requested = trim($requested);
+
+    if ($requested === '') {
+        throw new InvalidArgumentException('Hiányzó oszlopnév.');
+    }
+
+    if ($requested === '*') {
+        return ['*', '*'];
+    }
+
+    $columns = getTableColumns($pdo, $table);
+
+    $match = matchColumnName($columns, $requested);
+    if ($match !== null) {
+        rememberResolvedAlias($table, $requested, $match);
+        return [$match, $requested];
+    }
+
+    $configuredActual = getConfiguredAlias($table, $requested);
+    if ($configuredActual !== null) {
+        $match = matchColumnName($columns, $configuredActual);
+        if ($match !== null) {
+            rememberResolvedAlias($table, $requested, $match);
+            return [$match, $requested];
+        }
+
+        throw new InvalidArgumentException(sprintf(
+            'Az alias konfiguráció érvénytelen: %s → %s (nincs ilyen oszlop).',
+            $requested,
+            $configuredActual
+        ));
+    }
+
+    $lowerRequested = lowercase_key($requested);
+    $synonyms = GLOBAL_COLUMN_SYNONYMS[$lowerRequested] ?? [];
+    foreach ($synonyms as $synonym) {
+        $match = matchColumnName($columns, $synonym);
+        if ($match !== null) {
+            rememberResolvedAlias($table, $requested, $match);
+            return [$match, $requested];
+        }
+    }
+
+    throw new InvalidArgumentException(sprintf(
+        'A(z) %s oszlop nem található a(z) %s táblában. Add hozzá az aliasokhoz az api/config.php fájlban.',
+        $requested,
+        $table
+    ));
+}
+
+function matchColumnName(array $columns, string $target): ?string
+{
+    foreach ($columns as $column) {
+        if (identifiersMatch($column, $target)) {
+            return $column;
+        }
+    }
+
+    $targetNormalized = normalizeIdentifier($target);
+    foreach ($columns as $column) {
+        if ($targetNormalized !== '' && $targetNormalized === normalizeIdentifier($column)) {
+            return $column;
+        }
+    }
+
+    $targetLower = lowercase_key($target);
+    foreach ($columns as $column) {
+        if ($targetLower !== '' && str_contains(lowercase_key($column), $targetLower)) {
+            return $column;
+        }
+    }
+
+    return null;
+}
+
+function identifiersMatch(string $left, string $right): bool
+{
+    if (lowercase_key($left) === lowercase_key($right)) {
+        return true;
+    }
+
+    return normalizeIdentifier($left) === normalizeIdentifier($right);
+}
+
+function normalizeIdentifier(string $value): string
+{
+    $lower = lowercase_key($value);
+
+    if (function_exists('iconv')) {
+        $transliterated = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $lower);
+        if ($transliterated !== false) {
+            $lower = $transliterated;
+        }
+    }
+
+    $normalized = preg_replace('/[^a-z0-9]+/', '', $lower);
+
+    return $normalized ?? '';
+}
+
+function lowercase_key(string $value): string
+{
+    return function_exists('mb_strtolower')
+        ? mb_strtolower($value, 'UTF-8')
+        : strtolower($value);
+}
+
+function mapRecordForWrite(PDO $pdo, string $table, array $record): array
+{
+    $mapped = [];
+
+    foreach ($record as $column => $value) {
+        if (!is_string($column)) {
+            continue;
+        }
+
+        [$actualColumn] = resolveColumn($pdo, $table, $column);
+        if ($actualColumn === '*') {
+            continue;
+        }
+
+        $mapped[$actualColumn] = $value;
+    }
+
+    return $mapped;
+}
+
+function applyAliasesToRow(array $row, string $table): array
+{
+    global $resolvedColumnMap;
+
+    $tableKey = lowercase_key($table);
+    $aliases = $resolvedColumnMap[$tableKey] ?? [];
+
+    foreach ($aliases as $info) {
+        $alias = $info['alias'];
+        $actual = $info['actual'];
+
+        if ($alias === $actual) {
+            continue;
+        }
+
+        if (array_key_exists($actual, $row) && !array_key_exists($alias, $row)) {
+            $row[$alias] = $row[$actual];
+        }
+    }
+
+    foreach (GLOBAL_COLUMN_SYNONYMS as $alias => $synonyms) {
+        if (array_key_exists($alias, $row)) {
+            continue;
+        }
+
+        foreach ($synonyms as $synonym) {
+            foreach ($row as $columnName => $value) {
+                if (identifiersMatch($columnName, $synonym)) {
+                    $row[$alias] = $value;
+                    rememberResolvedAlias($table, $alias, $columnName);
+                    break 2;
+                }
+            }
+        }
+    }
+
+    return $row;
+}
+
+function getTableColumns(PDO $pdo, string $table): array
+{
+    static $cache = [];
+
+    $tableKey = lowercase_key($table);
+
+    if (!isset($cache[$tableKey])) {
+        $statement = $pdo->query('SHOW COLUMNS FROM ' . quoteIdentifier($table));
+        $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+        $cache[$tableKey] = array_map(
+            static fn(array $row) => $row['Field'] ?? '',
+            $rows
+        );
+    }
+
+    return $cache[$tableKey];
 }
