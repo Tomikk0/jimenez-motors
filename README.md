@@ -7,11 +7,17 @@ A Jimenez Motors admin felület mostantól egy PHP + MariaDB alapú háttérrel 
 1. Hozz létre egy MariaDB adatbázist, majd futtasd a `database/schema.sql` fájlt a szükséges táblák kialakításához.
 2. Állítsd be az adatbázis elérhetőségét környezeti változókkal, vagy módosítsd az `api/config.php` fájlt:
    - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
-3. Indíts egy beépített PHP szervert a projekt gyökeréből:
+3. Indítsd el a mellékelt segédszkriptet, ami háttérfolyamatként futtatja a beépített PHP szervert az alapértelmezett (80-as) HTTP porton:
    ```bash
-   php -S 0.0.0.0:8000
+   sudo scripts/php_server.sh start
    ```
-4. Nyisd meg a böngészőben: <http://localhost:8000/index.html>
+   > **Megjegyzés:** A 80-as port root jogosultságot igényel, ezért szükséges a `sudo`. Ha más portot szeretnél, állítsd be a `PORT` környezeti változót a parancs előtt (pl. `PORT=8080 scripts/php_server.sh start`).
+4. Nyisd meg a böngészőben: <http://localhost/index.html>
+
+5. Ha szeretnéd leállítani a szervert, futtasd:
+   ```bash
+   sudo scripts/php_server.sh stop
+   ```
 
 ## Első felhasználó létrehozása
 
