@@ -89,13 +89,24 @@ function run_insert(\PDO $pdo, string $table, $data, bool $returning, string $se
 
     $rows = is_assoc($data) ? [$data] : $data;
 
+    $tableColumns = array_fill_keys(get_table_columns($pdo, $table), true);
+    if (empty($tableColumns)) {
+        send_error('No columns available for table', 500, ['table' => $table]);
+    }
+
     $insertedIds = [];
     foreach ($rows as $row) {
         if (!is_array($row)) {
             send_error('Each insert row must be an object');
         }
 
-        $columns = array_keys($row);
+        $filteredRow = array_intersect_key($row, $tableColumns);
+
+        if (empty($filteredRow)) {
+            send_error('No valid columns provided for insert', 400, ['table' => $table]);
+        }
+
+        $columns = array_keys($filteredRow);
         $placeholders = [];
         $params = [];
 
@@ -103,7 +114,7 @@ function run_insert(\PDO $pdo, string $table, $data, bool $returning, string $se
             $safeColumn = validate_identifier((string) $column);
             $placeholder = ':' . $safeColumn;
             $placeholders[] = $placeholder;
-            $params[$placeholder] = normalise_value($row[$column]);
+            $params[$placeholder] = normalise_value($filteredRow[$column]);
         }
 
         $columnList = implode(', ', array_map(static fn ($col) => '`' . validate_identifier((string) $col) . '`', $columns));
@@ -129,16 +140,23 @@ function run_update(\PDO $pdo, string $table, $data, string $whereClause, array 
         send_error('Update data must be an object');
     }
 
+    $tableColumns = array_fill_keys(get_table_columns($pdo, $table), true);
+    if (empty($tableColumns)) {
+        send_error('No columns available for table', 500, ['table' => $table]);
+    }
+
+    $filteredData = array_intersect_key($data, $tableColumns);
+
+    if (empty($filteredData)) {
+        send_error('No valid columns provided for update', 400, ['table' => $table]);
+    }
+
     $setParts = [];
-    foreach ($data as $column => $value) {
+    foreach ($filteredData as $column => $value) {
         $safeColumn = validate_identifier((string) $column);
         $paramName = ':set_' . $safeColumn;
         $setParts[] = sprintf('`%s` = %s', $safeColumn, $paramName);
         $params[$paramName] = normalise_value($value);
-    }
-
-    if (empty($setParts)) {
-        send_error('No update columns provided');
     }
 
     $sql = sprintf('UPDATE `%s` SET %s%s', $table, implode(', ', $setParts), $whereClause);

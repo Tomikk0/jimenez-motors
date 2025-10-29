@@ -12,6 +12,24 @@ function print_usage(): void
     fwrite(STDERR, "Usage: php scripts/create_user.php --username=NAME --password=SECRET --member=DISPLAY_NAME [--role=user|admin] [--rank=RANK] [--phone=PHONE]\n");
 }
 
+function table_has_column(\PDO $pdo, string $table, string $column): bool
+{
+    $statement = $pdo->prepare(
+        'SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column'
+    );
+
+    if ($statement === false) {
+        throw new RuntimeException('Unable to inspect database schema.');
+    }
+
+    $statement->execute([
+        ':table' => $table,
+        ':column' => $column,
+    ]);
+
+    return (int) $statement->fetchColumn() > 0;
+}
+
 function parse_arguments(array $argv): array
 {
     $arguments = [];
@@ -75,13 +93,28 @@ try {
     $member = $memberStatement->fetch();
 
     if ($member === false) {
-        $memberInsert = $pdo->prepare('INSERT INTO members (name, rank, phone, created_by) VALUES (:name, :rank, :phone, :created_by)');
-        $memberInsert->execute([
+        $hasCreatedBy = table_has_column($pdo, 'members', 'created_by');
+
+        $columns = ['name', 'rank', 'phone'];
+        $placeholders = [':name', ':rank', ':phone'];
+        $params = [
             ':name' => $memberName,
             ':rank' => $rank,
             ':phone' => $phone !== '' ? $phone : null,
-            ':created_by' => 'CLI script',
-        ]);
+        ];
+
+        if ($hasCreatedBy) {
+            $columns[] = 'created_by';
+            $placeholders[] = ':created_by';
+            $params[':created_by'] = 'CLI script';
+        }
+
+        $memberInsert = $pdo->prepare(sprintf(
+            'INSERT INTO members (%s) VALUES (%s)',
+            implode(', ', $columns),
+            implode(', ', $placeholders)
+        ));
+        $memberInsert->execute($params);
     } else {
         $updateFields = [];
         $updateParams = [':name' => $memberName];

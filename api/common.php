@@ -123,3 +123,30 @@ function normalise_value($value)
 
     return $value;
 }
+
+function get_table_columns(\PDO $pdo, string $table): array
+{
+    static $cache = [];
+
+    if (isset($cache[$table])) {
+        return $cache[$table];
+    }
+
+    $safeTable = validate_identifier($table);
+    $query = sprintf('SHOW COLUMNS FROM `%s`', $safeTable);
+    $statement = $pdo->query($query);
+
+    if ($statement === false) {
+        send_error('Unable to inspect table columns', 500, ['table' => $table]);
+    }
+
+    $columns = $statement->fetchAll(\PDO::FETCH_COLUMN);
+
+    if (!is_array($columns)) {
+        send_error('Unable to load table columns', 500, ['table' => $table]);
+    }
+
+    $cache[$table] = array_map('strval', $columns);
+
+    return $cache[$table];
+}
