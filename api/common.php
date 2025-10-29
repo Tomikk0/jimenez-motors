@@ -85,9 +85,16 @@ function build_where_clause(array $filters, array &$params): string
 
         switch ($operator) {
             case 'eq':
+                $value = $filter['value'] ?? null;
+
+                if ($value === null) {
+                    $clauses[] = sprintf('`%s` IS NULL', $column);
+                    break;
+                }
+
                 $paramName = ':filter_' . $index;
                 $clauses[] = sprintf('`%s` = %s', $column, $paramName);
-                $params[$paramName] = $filter['value'] ?? null;
+                $params[$paramName] = normalise_value($value);
                 break;
             default:
                 send_error('Unsupported operator', 400, ['operator' => $operator]);
@@ -95,4 +102,24 @@ function build_where_clause(array $filters, array &$params): string
     }
 
     return ' WHERE ' . implode(' AND ', $clauses);
+}
+
+function normalise_value($value)
+{
+    if (is_bool($value)) {
+        return $value ? 1 : 0;
+    }
+
+    if ($value instanceof DateTimeInterface) {
+        return $value->format('Y-m-d H:i:s');
+    }
+
+    if (is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/', $value)) {
+        $date = date_create($value);
+        if ($date !== false) {
+            return $date->format('Y-m-d H:i:s');
+        }
+    }
+
+    return $value;
 }

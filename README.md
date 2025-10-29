@@ -16,6 +16,7 @@ A Jimenez Motors admin felület mostantól egy PHP + MariaDB alapú háttérrel 
 ## Működés
 
 - A front-end JavaScript továbbra is a `supabase` változóval dolgozik, de az most egy helyi kliens, amely az `api/query.php` végponttal kommunikál.
+- A Supabase felhős adatbázis teljesen kiváltásra került; minden adat most a MariaDB szerveren tárolódik.
 - Minden beszúrás, frissítés és lekérdezés a MariaDB adatbázison keresztül történik.
 - A képek tárolása továbbra is base64 formátumban lehetséges, vagy tetszőlegesen bővíthető a `uploads/` mappával.
 

@@ -1,6 +1,8 @@
 // === HELYI API KAPCSOLAT ===
 const API_BASE_URL = 'api';
+// A `supabase` változó visszafelé kompatibilis alias; valójában a PHP + MariaDB API-t hívja.
 const supabase = window.apiClient || window.createLocalClient(API_BASE_URL);
+window.dbClient = supabase;
 window.API_BASE_URL = API_BASE_URL;
 
 // Globális változók

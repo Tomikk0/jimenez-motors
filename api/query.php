@@ -189,18 +189,3 @@ function is_assoc(array $array): bool
     return array_keys($array) !== range(0, count($array) - 1);
 }
 
-function normalise_value($value)
-{
-    if (is_bool($value)) {
-        return $value ? 1 : 0;
-    }
-
-    if (is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/', $value)) {
-        $date = date_create($value);
-        if ($date !== false) {
-            return $date->format('Y-m-d H:i:s');
-        }
-    }
-
-    return $value;
-}
