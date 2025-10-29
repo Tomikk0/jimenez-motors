@@ -12,6 +12,14 @@ A Jimenez Motors admin felület mostantól egy PHP + MariaDB alapú háttérrel 
    sudo scripts/php_server.sh start
    ```
    > **Megjegyzés:** A 80-as port root jogosultságot igényel, ezért szükséges a `sudo`. Ha más portot szeretnél, állítsd be a `PORT` környezeti változót a parancs előtt (pl. `PORT=8080 scripts/php_server.sh start`).
+
+   Ha közvetlenül a `scripts/` könyvtárból futtatnád, add hozzá az aktuális könyvtárra mutató `./` előtagot:
+
+   ```bash
+   cd scripts
+   sudo ./php_server.sh start
+   ```
+   Így nincs szükség arra, hogy a szkriptet felvedd a `PATH` változóba.
 4. Nyisd meg a böngészőben: <http://localhost/index.html>
 
 5. Ha szeretnéd leállítani a szervert, futtasd:
