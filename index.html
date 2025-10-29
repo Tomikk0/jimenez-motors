@@ -371,6 +371,37 @@
     </div>
 </div>
 
+<div id="editPhoneModal" class="edit-modal" style="display: none;">
+    <div class="edit-modal-content" style="max-width: 460px;">
+        <div class="edit-modal-header">
+            <h3>📞 Telefonszám módosítása</h3>
+            <span class="edit-close" onclick="closeEditPhoneModal()">&times;</span>
+        </div>
+
+        <div class="edit-modal-body">
+            <div id="editPhoneMessage" class="message"></div>
+
+            <div class="member-info-card" style="text-align: center; margin-bottom: 20px;">
+                <h4 id="editPhoneMemberName" style="margin: 0; color: #2d3748;"></h4>
+                <p style="color: #718096; margin: 10px 0 0 0;">telefonszám frissítése</p>
+            </div>
+
+            <div class="sale-form">
+                <div class="form-group">
+                    <label for="editPhoneValue">📱 Új telefonszám</label>
+                    <input type="text" id="editPhoneValue" class="modern-input" placeholder="+36..." autocomplete="tel">
+                    <p style="color: #718096; font-size: 0.8em; margin-top: 6px;">Hagyd üresen a telefonszám törléséhez.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="edit-modal-footer">
+            <button class="btn-cancel" onclick="closeEditPhoneModal()">❌ Mégse</button>
+            <button class="btn-confirm-sale" onclick="savePhoneForMember()">💾 Mentés</button>
+        </div>
+    </div>
+</div>
+
   <div id="kickedMembersModal" class="edit-modal" style="display: none;">
     <div class="edit-modal-content" style="max-width: 900px; max-height: 90vh;">
       <div class="edit-modal-header">
