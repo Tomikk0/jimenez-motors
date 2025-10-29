@@ -528,10 +528,10 @@ async function addBadgeNote() {
             // Új létrehozása
             result = await supabase
                 .from('badges')
-                .insert([{
+                .insert([{ 
                     rank: rank,
                     note: note,
-                    created_by: currentUser.tagName
+                    updated_by: currentUser.tagName
                 }]);
         }
 
