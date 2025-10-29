@@ -33,19 +33,29 @@ function getImageUrl(imagePath) {
     console.log('✅ HTTP URL');
     return imagePath;
   }
-  
+
   if (imagePath.startsWith('data:image')) {
     console.log('✅ Base64 kép');
     return imagePath;
   }
-  
+
+  if (imagePath.startsWith('/')) {
+    console.log('✅ Relatív gyökér URL');
+    return imagePath;
+  }
+
   if (imagePath.includes('undefined')) {
     console.log('❌ Undefined kép');
     return '';
   }
-  
-  const finalUrl = `${supabaseUrl}/storage/v1/object/public/car-images/${imagePath}`;
-  console.log('✅ Supabase URL:', finalUrl);
+
+  const base = (typeof window !== 'undefined' && window.API_BASE_URL)
+    ? window.API_BASE_URL.replace(/\/$/, '')
+    : '';
+
+  const sanitizedPath = imagePath.replace(/^\//, '');
+  const finalUrl = base ? `${base}/${sanitizedPath}` : sanitizedPath;
+  console.log('✅ Helyi URL:', finalUrl);
   return finalUrl;
 }
 
