@@ -9,22 +9,22 @@ A Jimenez Motors admin felület mostantól egy PHP + MariaDB alapú háttérrel 
    - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 3. Indítsd el a mellékelt segédszkriptet, ami háttérfolyamatként futtatja a beépített PHP szervert az alapértelmezett (80-as) HTTP porton:
    ```bash
-   sudo scripts/php_server.sh start
+   sudo bash scripts/php_server.sh start
    ```
-   > **Megjegyzés:** A 80-as port root jogosultságot igényel, ezért szükséges a `sudo`. Ha más portot szeretnél, állítsd be a `PORT` környezeti változót a parancs előtt (pl. `PORT=8080 scripts/php_server.sh start`).
+   > **Megjegyzés:** A 80-as port root jogosultságot igényel, ezért szükséges a `sudo`. Ha más portot szeretnél, állítsd be a `PORT` környezeti változót a parancs előtt (pl. `PORT=8080 bash scripts/php_server.sh start`).
 
-   Ha közvetlenül a `scripts/` könyvtárból futtatnád, add hozzá az aktuális könyvtárra mutató `./` előtagot:
+   Több tárhelyszolgáltató a `/var/www` könyvtárat „noexec” opcióval csatolja, ami megakadályozza a `./php_server.sh` formájú futtatást. Ilyenkor bármikor hívhatod közvetlenül a `bash` értelmezőt:
 
    ```bash
    cd scripts
-   sudo ./php_server.sh start
+   sudo bash php_server.sh start
    ```
-   Így nincs szükség arra, hogy a szkriptet felvedd a `PATH` változóba.
+   Így a szkript akkor is működik, ha a fájlra nincs végrehajtási jog, vagy a fájlrendszer tiltja a közvetlen futtatást.
 4. Nyisd meg a böngészőben: <http://localhost/index.html>
 
 5. Ha szeretnéd leállítani a szervert, futtasd:
    ```bash
-   sudo scripts/php_server.sh stop
+   sudo bash scripts/php_server.sh stop
    ```
 
 ## Első felhasználó létrehozása
