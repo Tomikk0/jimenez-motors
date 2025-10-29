@@ -13,6 +13,19 @@ A Jimenez Motors admin felület mostantól egy PHP + MariaDB alapú háttérrel 
    ```
 4. Nyisd meg a böngészőben: <http://localhost:8000/index.html>
 
+## Első felhasználó létrehozása
+
+Ha még nincs admin felhasználód, hozz létre egyet a mellékelt CLI-szkripttel:
+
+```bash
+php scripts/create_user.php --username=felhasznalonev --password=valami --member="IG név" --role=admin --rank="Owner"
+```
+
+- A jelszó base64-ben kerül eltárolásra, a script ezt automatikusan intézi.
+- Ha a tag még nem létezik a `members` táblában, a script létrehozza.
+- A `--role` opció hagyható, alapértelmezés szerint `user`-t hoz létre.
+- A `--phone` opcióval telefonszám is megadható.
+
 ## Működés
 
 - A front-end JavaScript továbbra is a `supabase` változóval dolgozik, de az most egy helyi kliens, amely az `api/query.php` végponttal kommunikál.
