@@ -1,4 +1,6 @@
 let currentPasswordChangeMember = null;
+let currentPhoneEditMember = null;
+let currentPhoneEditValue = '';
 async function forceRefreshTagAdmin() {
     console.log('🔄 Kényszerített frissítés...');
     try {
@@ -283,7 +285,7 @@ function renderTagAdminTags(tags) {
         
         tags.forEach(tag => {
             const rankIcon = getRankIcon(tag.rank);
-            
+
             // Dátum formázása
             let dateDisplay = '-';
             if (tag.created_at) {
@@ -296,12 +298,24 @@ function renderTagAdminTags(tags) {
             }
             
             // Telefonszám megjelenítése
-            const phoneDisplay = tag.phone ? 
+            const phoneDisplay = tag.phone ?
                 `<div class="tag-phone">
                     📞 ${escapeHtml(tag.phone)}
-                </div>` : 
+                </div>` :
                 '<div style="color: #a0aec0; font-size: 0.85em; font-style: italic; margin-top: 5px;">nincs telefonszám</div>';
-            
+
+            const safeNameForHandler = String(tag.name)
+                .replace(/\\/g, '\\\\')
+                .replace(/\r/g, '\\r')
+                .replace(/\n/g, '\\n')
+                .replace(/'/g, "\\'");
+            const safePhoneForHandler = (tag.phone || '')
+                .toString()
+                .replace(/\\/g, '\\\\')
+                .replace(/\r/g, '\\r')
+                .replace(/\n/g, '\\n')
+                .replace(/'/g, "\\'");
+
             html += `
                 <div class="tag-admin-card" id="tag-card-${escapeHtml(tag.name).replace(/'/g, "\\'")}">
                     <div class="tag-admin-header">
@@ -332,20 +346,24 @@ function renderTagAdminTags(tags) {
                             <option value="Truck Driver" ${tag.rank === 'Truck Driver' ? 'selected' : ''}>🚛 Truck Driver</option>
                             <option value="Member" ${tag.rank === 'Member' ? 'selected' : ''}>👤 Member</option>
                         </select>
-                        
+
                         <!-- Hozzáférés változtatás -->
-                        <select onchange="updateUserRole('${escapeHtml(tag.name).replace(/'/g, "\\'")}', this.value)" 
+                        <select onchange="updateUserRole('${escapeHtml(tag.name).replace(/'/g, "\\'")}', this.value)"
                                 class="modern-input" style="padding: 8px; font-size: 0.85em; width: 100%; margin-bottom: 8px;">
                             <option value="">Hozzáférés változtatás...</option>
                             <option value="user" ${tag.user_role === 'user' ? 'selected' : ''}>👤 User</option>
                             <option value="admin" ${tag.user_role === 'admin' ? 'selected' : ''}>👑 Admin</option>
                         </select>
 
+                        <button class="badge-edit-btn" onclick="openEditPhoneModal('${safeNameForHandler}', '${safePhoneForHandler}')">
+                            📞 Telefonszám módosítás
+                        </button>
+
                         <!-- JELSZÓ VÁLTÁS GOMB -->
                         <button class="badge-edit-btn" onclick="openChangePasswordForUserModal('${escapeHtml(tag.name).replace(/'/g, "\\'")}', '${escapeHtml(tag.name).replace(/'/g, "\\'")}')">
                             🔐 Jelszó váltás
                         </button>
-                        
+
                         <button class="badge-delete-btn" onclick="openTagAdminKickModal('${escapeHtml(tag.name).replace(/'/g, "\\'")}')">
                             🚫 Kirúgás
                         </button>
@@ -448,10 +466,105 @@ async function changePasswordForUser() {
 function showChangePasswordForUserMessage(text, type = 'success') {
     const messageEl = document.getElementById('changePasswordForUserMessage');
     if (!messageEl) return;
-    
+
     messageEl.textContent = text;
     messageEl.className = `message ${type}`;
     messageEl.style.display = 'block';
+}
+
+function openEditPhoneModal(memberName, currentPhone) {
+    if (!checkAdminAccess()) return;
+
+    currentPhoneEditMember = memberName;
+    currentPhoneEditValue = currentPhone || '';
+
+    const modal = document.getElementById('editPhoneModal');
+    const titleEl = document.getElementById('editPhoneMemberName');
+    const inputEl = document.getElementById('editPhoneValue');
+    const messageEl = document.getElementById('editPhoneMessage');
+
+    if (!modal || !titleEl || !inputEl || !messageEl) {
+        console.error('❌ openEditPhoneModal: hiányzó DOM elemek');
+        return;
+    }
+
+    titleEl.textContent = memberName;
+    inputEl.value = currentPhoneEditValue;
+    messageEl.style.display = 'none';
+    messageEl.textContent = '';
+
+    modal.style.display = 'block';
+
+    setTimeout(() => {
+        inputEl.focus();
+    }, 300);
+}
+
+function closeEditPhoneModal() {
+    const modal = document.getElementById('editPhoneModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+
+    currentPhoneEditMember = null;
+    currentPhoneEditValue = '';
+}
+
+function showEditPhoneMessage(text, type = 'success') {
+    const messageEl = document.getElementById('editPhoneMessage');
+    if (!messageEl) return;
+
+    messageEl.textContent = text;
+    messageEl.className = `message ${type}`;
+    messageEl.style.display = 'block';
+}
+
+async function savePhoneForMember() {
+    try {
+        if (!checkAdminAccess() || !currentPhoneEditMember) {
+            showEditPhoneMessage('Nincs jogosultságod!', 'error');
+            return;
+        }
+
+        const inputEl = document.getElementById('editPhoneValue');
+        if (!inputEl) {
+            showEditPhoneMessage('Nem található a telefonszám mező!', 'error');
+            return;
+        }
+
+        const newPhone = inputEl.value.trim();
+        const payload = newPhone === '' ? { phone: null } : { phone: newPhone };
+
+        const { error } = await supabase
+            .from('members')
+            .update(payload)
+            .eq('name', currentPhoneEditMember);
+
+        if (error) {
+            console.error('Telefonszám frissítés hiba:', error);
+            showEditPhoneMessage('Hiba történt a telefonszám mentése során: ' + error.message, 'error');
+            return;
+        }
+
+        currentPhoneEditValue = newPhone;
+        showEditPhoneMessage('✅ Telefonszám sikeresen frissítve!', 'success');
+
+        await logMemberAction(
+            currentPhoneEditMember,
+            'rank_updated',
+            `${currentUser.tagName} megváltoztatta a telefonszámát: ${newPhone || 'törölve'}`
+        );
+
+        await loadTagAdminData();
+        await loadTags();
+
+        setTimeout(() => {
+            closeEditPhoneModal();
+        }, 1500);
+    } catch (error) {
+        console.error('savePhoneForMember hiba:', error);
+        showEditPhoneMessage('Váratlan hiba történt!', 'error');
+    }
 }
 
 // Új tag hozzáadása felhasználói fiókkal együtt - JAVÍTOTT VERZIÓ

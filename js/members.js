@@ -115,11 +115,15 @@ async function loadTags() {
     try {
         const { data, error } = await supabase
             .from('members')
-            .select('*')
+            .select('id, name, rank, phone, created_at')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        
+
+        if (typeof updateTagCaches === 'function') {
+            updateTagCaches(data || []);
+        }
+
         const rankHierarchy = {
             'Owner': 1,
             'Co-Owner': 2,
@@ -528,10 +532,10 @@ async function addBadgeNote() {
             // Új létrehozása
             result = await supabase
                 .from('badges')
-                .insert([{
+                .insert([{ 
                     rank: rank,
                     note: note,
-                    created_by: currentUser.tagName
+                    updated_by: currentUser.tagName
                 }]);
         }
 

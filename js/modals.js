@@ -181,7 +181,7 @@ async function confirmSaleWithEdit() {
     const saleTypeText = saleType === 'kp' ? 'Készpénz' : 'Normál';
     
     showMessage(`✅ Autó eladva${priceInfo}${taxInfo} (${saleTypeText} - Eladó: ${currentUser.tagName})`, 'success');
-    loadCars();
+    await loadCars(true);
     loadStats();
   }
 

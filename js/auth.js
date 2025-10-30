@@ -182,19 +182,11 @@ function updateUIForLoginState() {
     galleryActionHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
   }
   
-  const kivantHeader = document.getElementById('kivantHeader');
-  const actionHeader = document.getElementById('actionHeader');
   const tagActionHeader = document.getElementById('tagActionHeader');
-  const vetelHeader = document.getElementById('vetelHeader');
-  const keszpenzHeader = document.getElementById('keszpenzHeader');
   const historyButton = document.getElementById('historyButton');
   const badgeButton = document.getElementById('badgeButton');
 
-  if (kivantHeader) kivantHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
-  if (actionHeader) actionHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
   if (tagActionHeader) tagActionHeader.style.display = isAdminUser ? 'table-cell' : 'none';
-  if (vetelHeader) vetelHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
-  if (keszpenzHeader) keszpenzHeader.style.display = isLoggedIn ? 'none' : 'table-cell';
   
   if (historyButton) {
     historyButton.style.display = isAdminUser ? 'flex' : 'none';
