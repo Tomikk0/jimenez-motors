@@ -4,7 +4,7 @@
 function toggleHalloweenTheme() {
     const body = document.body;
     const isHalloween = body.classList.contains('halloween-theme');
-    
+
     if (isHalloween) {
         body.classList.remove('halloween-theme');
         localStorage.setItem('halloweenTheme', 'false');
@@ -16,6 +16,8 @@ function toggleHalloweenTheme() {
         addHalloweenDecorations();
         console.log('🎃 Halloween theme bekapcsolva');
     }
+
+    syncHalloweenTheme();
 }
 
 // Halloween dekorációk hozzáadása
@@ -54,6 +56,8 @@ function loadHalloweenTheme() {
         document.body.classList.add('halloween-theme');
         console.log('🎃 Halloween theme betöltve');
     }
+
+    syncHalloweenTheme();
 }
 
 // Toggle gomb hozzáadása
@@ -67,84 +71,32 @@ function addHalloweenToggle() {
     toggleBtn.onclick = toggleHalloweenTheme;
     document.body.appendChild(toggleBtn);
 }
-
-// Halloween theme alkalmazása minden elemre
-function applyHalloweenThemeToAllElements() {
+function syncHalloweenTheme() {
     if (document.body.classList.contains('halloween-theme')) {
-        const allElements = document.querySelectorAll('*');
-        
-        allElements.forEach(element => {
-            const computedStyle = window.getComputedStyle(element);
-            
-            const bgColor = computedStyle.backgroundColor;
-            if (bgColor && (bgColor.includes('255, 255, 255') || bgColor === 'white' || bgColor === '#ffffff')) {
-                element.style.backgroundColor = 'transparent';
-            }
-            
-            const textColor = computedStyle.color;
-            if (textColor && (textColor.includes('0, 0, 0') || textColor === 'black' || textColor === '#000000')) {
-                element.style.color = '#e2e8f0';
-            }
-        });
+        addHalloweenDecorations();
+    } else {
+        removeHalloweenDecorations();
     }
 }
 
-// === CSAK EGY OBSERVER ===
 const halloweenObserver = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        // Theme változás figyelése
+    for (const mutation of mutations) {
         if (mutation.attributeName === 'class') {
-            if (document.body.classList.contains('halloween-theme')) {
-                setTimeout(addHalloweenDecorations, 100);
-            } else {
-                removeHalloweenDecorations();
-            }
+            syncHalloweenTheme();
+            break;
         }
-        
-        // Új elemek figyelése
-        if (mutation.addedNodes.length) {
-            setTimeout(applyHalloweenThemeToAllElements, 100);
-        }
-    });
+    }
 });
 
-// Observer indítása
 halloweenObserver.observe(document.body, {
     attributes: true,
-    attributeFilter: ['class'],
-    childList: true,
-    subtree: true
+    attributeFilter: ['class']
 });
 
-// Inicializálás
 document.addEventListener('DOMContentLoaded', function() {
     addHalloweenToggle();
     loadHalloweenTheme();
-    
-    // Dekorációk késleltetett hozzáadása
-    setTimeout(() => {
-        if (document.body.classList.contains('halloween-theme')) {
-            addHalloweenDecorations();
-        }
-        applyHalloweenThemeToAllElements();
-    }, 500);
-});
-
-// Theme alkalmazása oldal betöltésekor és minden DOM változásnál
-document.addEventListener('DOMContentLoaded', applyHalloweenThemeToAllElements);
-
-// MutationObserver a dinamikus elemekhez
-const observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-        if (mutation.addedNodes.length) {
-            applyHalloweenThemeToAllElements();
-        }
-    });
-});
-
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
+    syncHalloweenTheme();
 });
 // === OLDAL KEZELÉS ===
 function showPage(pageName) {
@@ -367,14 +319,14 @@ async function loadTagOptions() {
   try {
     const { data, error } = await supabase
       .from('members')
-      .select('*')
+      .select('id, name, phone, rank, created_at')
       .order('name');
-    
+
     if (error) throw error;
-    tagOptions = data || [];
+    updateTagCaches(data || []);
   } catch (error) {
     console.error('Tag options load error:', error);
-    tagOptions = [];
+    updateTagCaches([]);
   }
 }
 

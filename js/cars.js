@@ -1,6 +1,22 @@
 // === AUTÓ KEZELÉSI FUNKCIÓK ===
-async function loadCars() {
+const currencyFormatterHU = new Intl.NumberFormat('hu-HU');
+
+async function loadCars(force = false) {
   const grid = document.getElementById('carCardGrid');
+
+  if (!force) {
+    if (carsLoadingPromise) {
+      return carsLoadingPromise;
+    }
+
+    if (carsLoaded) {
+      renderCars(allCars);
+      return Promise.resolve(allCars);
+    }
+  } else {
+    carsLoaded = false;
+  }
+
   if (grid) {
     grid.innerHTML = `
       <article class="car-card car-card-empty">
@@ -10,49 +26,67 @@ async function loadCars() {
     `;
   }
 
-  try {
+  const fetchPromise = (async () => {
     const { data, error } = await supabase
       .from('cars')
-      .select('*')
+      .select('id, model, tuning, purchase_price, desired_price, sale_price, sold, added_by, image_url, image_data_url, sold_by, sold_at, created_at')
       .eq('is_gallery', false)
-      .eq('sold', false)  // CSAK A NEM ELADOTT AUTÓK!
+      .eq('sold', false)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
-    allCars = data || [];
+    const rows = Array.isArray(data) ? data : [];
+    allCars = rows.map(car => {
+      const formattedPurchase = car.purchase_price ? currencyFormatterHU.format(car.purchase_price) : '';
+      const formattedDesired = car.desired_price ? currencyFormatterHU.format(car.desired_price) : '';
+      const formattedSale = car.sale_price ? currencyFormatterHU.format(car.sale_price) : '';
+      const preparedImageUrl = car.image_url ? getImageUrl(car.image_url) : (car.image_data_url || '');
 
-    allCars = allCars.map(car => ({
-      ...car,
-      VetelArFormatted: car.purchase_price ? new Intl.NumberFormat('hu-HU').format(car.purchase_price) : '',
-      KivantArFormatted: car.desired_price ? new Intl.NumberFormat('hu-HU').format(car.desired_price) : '',
-      EladasiArFormatted: car.sale_price ? new Intl.NumberFormat('hu-HU').format(car.sale_price) : '',
-      Model: car.model,
-      Tuning: car.tuning,
-      VetelAr: car.purchase_price,
-      KivantAr: car.desired_price,
-      EladasiAr: car.sale_price,
-      Eladva: car.sold,
-      Hozzáadta: car.added_by,
-      KepURL: getImageUrl(car.image_url),
-      sold_by: car.sold_by,
-      sold_at: car.sold_at
-    }));
+      return {
+        ...car,
+        VetelArFormatted: formattedPurchase,
+        KivantArFormatted: formattedDesired,
+        EladasiArFormatted: formattedSale,
+        Model: car.model,
+        Tuning: car.tuning,
+        VetelAr: car.purchase_price,
+        KivantAr: car.desired_price,
+        EladasiAr: car.sale_price,
+        Eladva: car.sold,
+        Hozzáadta: car.added_by,
+        KepURL: preparedImageUrl,
+        sold_by: car.sold_by,
+        sold_at: car.sold_at
+      };
+    });
 
+    carsLoaded = true;
     console.log('🚗 Autók betöltve - Csak nem eladottak:', allCars.length, 'db');
     renderCars(allCars);
-  } catch (error) {
+    return allCars;
+  })();
+
+  const handledPromise = fetchPromise.catch(error => {
+    carsLoaded = false;
     console.error('Cars load error:', error);
     showMessage('Hiba történt az autók betöltésekor', 'error');
-  }
+    throw error;
+  }).finally(() => {
+    carsLoadingPromise = null;
+  });
+
+  carsLoadingPromise = handledPromise;
+
+  return handledPromise;
 }
 
 function renderCars(cars) {
   try {
     const grid = document.getElementById('carCardGrid');
     if (!grid) return;
-
-    grid.innerHTML = '';
 
     if (!cars || cars.length === 0) {
       grid.innerHTML = `
@@ -64,13 +98,16 @@ function renderCars(cars) {
       return;
     }
 
+    const fragment = document.createDocumentFragment();
+    const hasTagMap = typeof tagOptionMap !== 'undefined' && tagOptionMap instanceof Map && tagOptionMap.size > 0;
+
     cars.forEach(c => {
       const card = document.createElement('article');
       card.className = 'car-card';
 
       let imageUrl = '';
-      if (c.image_url && c.image_url.trim() !== '') {
-        imageUrl = getImageUrl(c.image_url);
+      if (c.KepURL && c.KepURL.trim() !== '') {
+        imageUrl = c.KepURL;
       } else if (c.image_data_url && c.image_data_url.trim() !== '') {
         imageUrl = c.image_data_url;
       }
@@ -85,15 +122,23 @@ function renderCars(cars) {
       let keszpenzAr = '-';
       if (c.EladasiAr && !isNaN(c.EladasiAr)) {
         const keszpenzErtek = Math.round(c.EladasiAr * 0.925);
-        keszpenzAr = `${new Intl.NumberFormat('hu-HU').format(keszpenzErtek)} $`;
+        keszpenzAr = `${currencyFormatterHU.format(keszpenzErtek)} $`;
       }
 
       let sellerNameHtml = '<span class="car-card-meta-value">-</span>';
       let sellerPhoneHtml = '<span class="car-card-meta-subtle">nincs adat</span>';
       if (c.Hozzáadta) {
         const sellerName = escapeHtml(c.Hozzáadta);
-        const eladoTag = tagOptions.find(tag => tag.name === c.Hozzáadta);
-        const telefonszam = eladoTag && eladoTag.phone ? escapeHtml(eladoTag.phone) : '';
+        let telefonszam = '';
+
+        if (hasTagMap) {
+          const eladoTag = tagOptionMap.get(c.Hozzáadta) || null;
+          telefonszam = eladoTag && eladoTag.phone ? escapeHtml(eladoTag.phone) : '';
+        } else if (Array.isArray(tagOptions) && tagOptions.length > 0) {
+          const fallbackTag = tagOptions.find(tag => tag.name === c.Hozzáadta);
+          telefonszam = fallbackTag && fallbackTag.phone ? escapeHtml(fallbackTag.phone) : '';
+        }
+
         sellerNameHtml = `<span class="car-card-meta-value">${sellerName}</span>`;
         sellerPhoneHtml = telefonszam
           ? `<span class="car-card-meta-phone">📞 ${telefonszam}</span>`
@@ -158,8 +203,11 @@ function renderCars(cars) {
         ${actionSection}
       `;
 
-      grid.appendChild(card);
+      fragment.appendChild(card);
     });
+
+    grid.innerHTML = '';
+    grid.appendChild(fragment);
   } catch (error) {
     console.error('renderCars hiba:', error);
     const grid = document.getElementById('carCardGrid');
@@ -226,7 +274,7 @@ async function addCar() {
       showMessage('Autó sikeresen hozzáadva!', 'success');
       clearInputs();
       clearImage();
-      loadCars();
+      await loadCars(true);
       loadStats();
     }
 
@@ -268,7 +316,7 @@ async function deleteCar(carId) {
       showMessage('Hiba történt a törlés során: ' + error.message, 'error');
     } else {
       showMessage('Autó sikeresen törölve!', 'success');
-      loadCars();
+      await loadCars(true);
       loadStats();
     }
   } catch (error) {
