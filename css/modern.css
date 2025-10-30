@@ -1002,10 +1002,32 @@ select:focus {
 }
 
 .car-card-grid {
-  display: grid;
+  display: flex;
   gap: 24px;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  overflow-x: auto;
+  padding: 6px 6px 18px;
   position: relative;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.car-card-grid::after {
+  content: '';
+  flex: 0 0 6px;
+}
+
+.car-card-grid::-webkit-scrollbar {
+  height: 8px;
+}
+
+.car-card-grid::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.06);
+  border-radius: 999px;
+}
+
+.car-card-grid::-webkit-scrollbar-thumb {
+  background: rgba(37, 99, 235, 0.35);
+  border-radius: 999px;
 }
 
 .car-card {
@@ -1020,6 +1042,8 @@ select:focus {
   box-shadow: 0 28px 55px rgba(15, 23, 42, 0.12);
   overflow: hidden;
   min-height: 100%;
+  flex: 0 0 320px;
+  scroll-snap-align: center;
 }
 
 .car-card::before {
@@ -1251,6 +1275,7 @@ body.logged-in .car-card-price-public.car-card-price-keszpenz {
 @media (max-width: 720px) {
   .car-card {
     padding: 18px;
+    flex: 0 0 280px;
   }
 
   .car-card-image,
@@ -1260,7 +1285,7 @@ body.logged-in .car-card-price-public.car-card-price-keszpenz {
 }
 
 @media (max-width: 520px) {
-  .car-card-grid {
-    grid-template-columns: 1fr;
+  .car-card {
+    flex-basis: calc(100vw - 80px);
   }
 }
