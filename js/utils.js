@@ -33,19 +33,29 @@ function getImageUrl(imagePath) {
     console.log('✅ HTTP URL');
     return imagePath;
   }
-  
+
   if (imagePath.startsWith('data:image')) {
     console.log('✅ Base64 kép');
     return imagePath;
   }
-  
+
+  if (imagePath.startsWith('/')) {
+    console.log('✅ Relatív gyökér URL');
+    return imagePath;
+  }
+
   if (imagePath.includes('undefined')) {
     console.log('❌ Undefined kép');
     return '';
   }
-  
-  const finalUrl = `${supabaseUrl}/storage/v1/object/public/car-images/${imagePath}`;
-  console.log('✅ Supabase URL:', finalUrl);
+
+  const base = (typeof window !== 'undefined' && window.API_BASE_URL)
+    ? window.API_BASE_URL.replace(/\/$/, '')
+    : '';
+
+  const sanitizedPath = imagePath.replace(/^\//, '');
+  const finalUrl = base ? `${base}/${sanitizedPath}` : sanitizedPath;
+  console.log('✅ Helyi URL:', finalUrl);
   return finalUrl;
 }
 
@@ -98,27 +108,36 @@ function handleImageSelect(event) {
     return;
   }
 
-  document.getElementById('imageFileName').textContent = file.name;
-
   const reader = new FileReader();
   reader.onload = function(e) {
     const preview = document.getElementById('imagePreview');
-    preview.innerHTML = `<img src="${e.target.result}" alt="Előnézet">`;
-    
+    if (preview) {
+      preview.innerHTML = `<img src="${e.target.result}" alt="Autó előnézet">`;
+      preview.classList.add('has-image');
+    }
+
     selectedImage = {
       dataUrl: e.target.result,
       name: file.name
     };
-    
+
     console.log('📷 Kép betöltve, méret:', Math.round(e.target.result.length / 1024) + 'KB');
   };
   reader.readAsDataURL(file);
 }
 
 function clearImage() {
-  document.getElementById('carImage').value = '';
-  document.getElementById('imageFileName').textContent = 'Nincs kép kiválasztva';
-  document.getElementById('imagePreview').innerHTML = '';
+  const fileInput = document.getElementById('carImage');
+  if (fileInput) {
+    fileInput.value = '';
+  }
+
+  const preview = document.getElementById('imagePreview');
+  if (preview) {
+    preview.innerHTML = '<span class="modern-image-placeholder">Nincs kép kiválasztva</span>';
+    preview.classList.remove('has-image');
+  }
+
   selectedImage = null;
 }
 
@@ -355,13 +374,34 @@ function onGalleryModelSelected(model) {
 // Inputok törlése
 function clearInputs() {
   try {
-    document.getElementById('modelSearch').value = '';
-    document.getElementById('vetel').value = '';
-    document.getElementById('kivant').value = '';
-    document.getElementById('eladas').value = '';
-    document.getElementById('newTag').value = '';
-    document.querySelectorAll('.modern-tuning-option').forEach(div => div.classList.remove('selected'));
-    document.getElementById('modelDropdown').style.display = 'none';
+    const modelInput = document.getElementById('modelSearch');
+    if (modelInput) modelInput.value = '';
+
+    const vetelInput = document.getElementById('vetel');
+    if (vetelInput) vetelInput.value = '';
+
+    const kivantInput = document.getElementById('kivant');
+    if (kivantInput) kivantInput.value = '';
+
+    const eladasInput = document.getElementById('eladas');
+    if (eladasInput) eladasInput.value = '';
+
+    const newTagInput = document.getElementById('newTag');
+    if (newTagInput) newTagInput.value = '';
+
+    if (typeof resetTuningOptionVisibility === 'function') {
+      resetTuningOptionVisibility();
+    } else {
+      document.querySelectorAll('.modern-tuning-option').forEach(div => {
+        div.classList.remove('selected');
+        div.classList.remove('option-hidden');
+        div.style.transform = 'translateY(0) scale(1)';
+      });
+    }
+
+    const dropdown = document.getElementById('modelDropdown');
+    if (dropdown) dropdown.style.display = 'none';
+
     clearImage();
   } catch (error) {
     console.error('clearInputs hiba:', error);
