@@ -400,11 +400,19 @@ function resetTuningOptionVisibility() {
 function renderTuningOptions(options) {
   try {
     const container = document.getElementById('addCarTuningContainer');
+    const compactSection = document.getElementById('addCarCompactSection');
+    const compactOptionsRow = document.getElementById('addCarCompactOptions');
     if (!container) return;
 
     container.innerHTML = '';
+    if (compactOptionsRow) {
+      compactOptionsRow.innerHTML = '';
+    }
     if (!options || options.length === 0) {
       container.innerHTML = '<div class="tuning-loading">Nincs tuning opció.</div>';
+      if (compactSection) {
+        compactSection.style.display = 'none';
+      }
       return;
     }
 
@@ -478,23 +486,14 @@ function renderTuningOptions(options) {
       pushGroupElement(groupEl, isMotorGroup ? 2 : 1, groupName.toLowerCase());
     });
 
-    if (compactGroups.length > 0) {
-      const compactWrapper = document.createElement('div');
-      compactWrapper.className = 'tuning-group tuning-group-compact';
+    if (compactSection) {
+      compactSection.style.display = compactGroups.length > 0 ? '' : 'none';
+    }
 
-      const compactTitle = document.createElement('div');
-      compactTitle.className = 'tuning-group-title';
-      compactTitle.textContent = 'Egyéb opciók';
-      compactWrapper.appendChild(compactTitle);
-
-      const compactOptions = document.createElement('div');
-      compactOptions.className = 'tuning-group-options tuning-group-options-inline';
+    if (compactOptionsRow && compactGroups.length > 0) {
       compactGroups.forEach(([groupName, values]) => {
-        renderButtons(groupName, values, compactOptions);
+        renderButtons(groupName, values, compactOptionsRow);
       });
-
-      compactWrapper.appendChild(compactOptions);
-      pushGroupElement(compactWrapper, 0, '');
     }
 
     groupElements
@@ -510,6 +509,10 @@ function renderTuningOptions(options) {
     container.appendChild(fragment);
   } catch (error) {
     console.error('renderTuningOptions hiba:', error);
+    const compactSection = document.getElementById('addCarCompactSection');
+    if (compactSection) {
+      compactSection.style.display = 'none';
+    }
   }
 }
 

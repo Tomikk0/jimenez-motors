@@ -945,6 +945,41 @@ select:focus {
   color: var(--ui-text);
 }
 
+.add-car-compact-section {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.add-car-compact-section h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--ui-text);
+}
+
+.add-car-compact-options {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+}
+
+.add-car-compact-options::-webkit-scrollbar {
+  height: 6px;
+}
+
+.add-car-compact-options::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+  border-radius: 999px;
+}
+
+.add-car-compact-options::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .add-car-tunings {
   display: flex;
   flex-direction: column;
