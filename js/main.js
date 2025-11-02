@@ -362,22 +362,19 @@ function toggleTuningOption(button) {
     const groupOptions = Array.from(document.querySelectorAll('.modern-tuning-option'))
       .filter(opt => (opt.dataset.group || '') === groupName);
 
-    if (button.classList.contains('selected')) {
+    const isSelected = button.classList.contains('selected');
+
+    groupOptions.forEach(opt => {
+      if (opt !== button) {
+        opt.classList.remove('selected', 'option-hidden');
+        opt.style.transform = 'translateY(0) scale(1)';
+      }
+    });
+
+    if (isSelected) {
       button.classList.remove('selected');
       button.style.transform = 'translateY(0) scale(1)';
-      groupOptions.forEach(opt => {
-        if (opt !== button) {
-          opt.classList.remove('option-hidden');
-        }
-      });
     } else {
-      groupOptions.forEach(opt => {
-        if (opt !== button) {
-          opt.classList.remove('selected');
-          opt.classList.add('option-hidden');
-          opt.style.transform = 'translateY(0) scale(1)';
-        }
-      });
       button.classList.add('selected');
       button.style.transform = 'translateY(-2px) scale(1.05)';
     }
