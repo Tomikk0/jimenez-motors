@@ -401,13 +401,9 @@ function renderTuningOptions(options) {
   try {
     const container = document.getElementById('addCarTuningContainer');
     const compactSection = document.getElementById('addCarCompactSection');
-    const compactOptionsRow = document.getElementById('addCarCompactOptions');
     if (!container) return;
 
     container.innerHTML = '';
-    if (compactOptionsRow) {
-      compactOptionsRow.innerHTML = '';
-    }
     if (!options || options.length === 0) {
       container.innerHTML = '<div class="tuning-loading">Nincs tuning opció.</div>';
       if (compactSection) {
@@ -433,17 +429,9 @@ function renderTuningOptions(options) {
     const sortedGroups = Array.from(groups.entries())
       .sort((a, b) => a[0].localeCompare(b[0], 'hu', { sensitivity: 'base' }));
 
-    const primaryGroups = [];
-    const compactGroups = [];
-
-    sortedGroups.forEach(entry => {
-      const [, values] = entry;
-      if (values.length >= 3) {
-        primaryGroups.push(entry);
-      } else {
-        compactGroups.push(entry);
-      }
-    });
+    if (compactSection) {
+      compactSection.style.display = 'none';
+    }
 
     const fragment = document.createDocumentFragment();
     const groupElements = [];
@@ -468,33 +456,23 @@ function renderTuningOptions(options) {
       groupElements.push({ element, order, sortKey });
     };
 
-    primaryGroups.forEach(([groupName, values]) => {
+    sortedGroups.forEach(([groupName, values]) => {
       const groupEl = document.createElement('div');
-      groupEl.className = 'tuning-group';
+      groupEl.className = 'tuning-tab-group';
 
       const titleEl = document.createElement('div');
-      titleEl.className = 'tuning-group-title';
+      titleEl.className = 'tuning-tab-label';
       titleEl.textContent = groupName;
       groupEl.appendChild(titleEl);
 
       const optionsEl = document.createElement('div');
-      optionsEl.className = 'tuning-group-options';
+      optionsEl.className = 'tuning-tab-options';
       renderButtons(groupName, values, optionsEl);
 
       groupEl.appendChild(optionsEl);
       const isMotorGroup = groupName.toLowerCase().startsWith('motor');
-      pushGroupElement(groupEl, isMotorGroup ? 2 : 1, groupName.toLowerCase());
+      pushGroupElement(groupEl, isMotorGroup ? 0 : 1, groupName.toLowerCase());
     });
-
-    if (compactSection) {
-      compactSection.style.display = compactGroups.length > 0 ? '' : 'none';
-    }
-
-    if (compactOptionsRow && compactGroups.length > 0) {
-      compactGroups.forEach(([groupName, values]) => {
-        renderButtons(groupName, values, compactOptionsRow);
-      });
-    }
 
     groupElements
       .sort((a, b) => {
