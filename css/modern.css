@@ -19,6 +19,7 @@
   --ui-warning: #fbbf24;
   --nav-rail-width: 104px;
   --nav-expanded-width: 288px;
+  --nav-item-height: 52px;
 }
 
 body {
@@ -196,7 +197,7 @@ body::after {
   color: var(--ui-text-muted);
   border: 1px solid transparent;
   border-radius: 18px;
-  padding: 14px 18px;
+  padding: 0 18px;
   font-weight: 600;
   letter-spacing: 0.05em;
   transition: all 0.25s ease;
@@ -210,6 +211,7 @@ body::after {
   white-space: nowrap;
   text-overflow: ellipsis;
   font-size: 0.95rem;
+  height: var(--nav-item-height);
 }
 
 .nav-btn::after {
@@ -1310,9 +1312,13 @@ select:focus {
 }
 
 @media (max-width: 600px) {
+  :root {
+    --nav-item-height: 48px;
+  }
+
   .nav-btn {
     min-width: 140px;
-    padding: 12px 16px;
+    padding: 0 16px;
   }
 }
 
