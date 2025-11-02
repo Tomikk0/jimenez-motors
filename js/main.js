@@ -438,6 +438,7 @@ function renderTuningOptions(options) {
     });
 
     const fragment = document.createDocumentFragment();
+    const groupElements = [];
 
     const renderButtons = (groupName, values, targetEl) => {
       values
@@ -455,6 +456,10 @@ function renderTuningOptions(options) {
         });
     };
 
+    const pushGroupElement = (element, order, sortKey) => {
+      groupElements.push({ element, order, sortKey });
+    };
+
     primaryGroups.forEach(([groupName, values]) => {
       const groupEl = document.createElement('div');
       groupEl.className = 'tuning-group';
@@ -469,7 +474,8 @@ function renderTuningOptions(options) {
       renderButtons(groupName, values, optionsEl);
 
       groupEl.appendChild(optionsEl);
-      fragment.appendChild(groupEl);
+      const isMotorGroup = groupName.toLowerCase().startsWith('motor');
+      pushGroupElement(groupEl, isMotorGroup ? 2 : 1, groupName.toLowerCase());
     });
 
     if (compactGroups.length > 0) {
@@ -481,29 +487,25 @@ function renderTuningOptions(options) {
       compactTitle.textContent = 'Egyéb opciók';
       compactWrapper.appendChild(compactTitle);
 
-      const compactMulti = document.createElement('div');
-      compactMulti.className = 'tuning-group-multi';
-      compactWrapper.appendChild(compactMulti);
-
+      const compactOptions = document.createElement('div');
+      compactOptions.className = 'tuning-group-options tuning-group-options-inline';
       compactGroups.forEach(([groupName, values]) => {
-        const subGroup = document.createElement('div');
-        subGroup.className = 'tuning-subgroup';
-
-        const subTitle = document.createElement('div');
-        subTitle.className = 'tuning-subgroup-title';
-        subTitle.textContent = groupName;
-        subGroup.appendChild(subTitle);
-
-        const optionsEl = document.createElement('div');
-        optionsEl.className = 'tuning-group-options tuning-subgroup-options';
-        renderButtons(groupName, values, optionsEl);
-
-        subGroup.appendChild(optionsEl);
-        compactMulti.appendChild(subGroup);
+        renderButtons(groupName, values, compactOptions);
       });
 
-      fragment.appendChild(compactWrapper);
+      compactWrapper.appendChild(compactOptions);
+      pushGroupElement(compactWrapper, 0, '');
     }
+
+    groupElements
+      .sort((a, b) => {
+        if (a.order !== b.order) {
+          return a.order - b.order;
+        }
+
+        return a.sortKey.localeCompare(b.sortKey, 'hu', { sensitivity: 'base' });
+      })
+      .forEach(item => fragment.appendChild(item.element));
 
     container.appendChild(fragment);
   } catch (error) {

@@ -964,40 +964,23 @@ select:focus {
 }
 
 .add-car-tuning-groups {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 16px;
 }
 
 .tuning-group-compact {
-  gap: 18px;
+  gap: 14px;
   padding: 18px 20px;
+  flex: 0 0 auto;
+  min-width: 220px;
 }
 
-.tuning-group-compact .tuning-group-multi {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
-}
-
-.tuning-subgroup {
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px dashed rgba(148, 163, 184, 0.6);
-  border-radius: 12px;
-  padding: 12px;
+.tuning-group-options-inline {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
-}
-
-.tuning-subgroup-title {
-  font-weight: 600;
-  color: var(--ui-text-muted);
-  font-size: 0.85rem;
-}
-
-.tuning-subgroup-options {
-  gap: 6px;
 }
 
 .tuning-group {
@@ -1008,6 +991,8 @@ select:focus {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1 1 220px;
+  min-width: 220px;
 }
 
 .tuning-group-title {
