@@ -945,6 +945,44 @@ select:focus {
   color: var(--ui-text);
 }
 
+.modern-image-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modern-image-preview {
+  width: 100%;
+  min-height: 190px;
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: rgba(235, 239, 250, 0.6);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.modern-image-preview.has-image {
+  border-style: solid;
+  border-color: rgba(37, 99, 235, 0.35);
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.modern-image-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.modern-image-placeholder {
+  color: var(--ui-text-muted);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
 .add-car-compact-section {
   margin-top: 18px;
   display: flex;
@@ -959,10 +997,13 @@ select:focus {
 }
 
 .add-car-compact-options {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-auto-columns: minmax(140px, 1fr);
   gap: 10px;
   overflow-x: auto;
-  padding-bottom: 6px;
+  padding: 4px 0 8px;
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
 }

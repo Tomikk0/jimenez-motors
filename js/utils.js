@@ -108,27 +108,36 @@ function handleImageSelect(event) {
     return;
   }
 
-  document.getElementById('imageFileName').textContent = file.name;
-
   const reader = new FileReader();
   reader.onload = function(e) {
     const preview = document.getElementById('imagePreview');
-    preview.innerHTML = `<img src="${e.target.result}" alt="Előnézet">`;
-    
+    if (preview) {
+      preview.innerHTML = `<img src="${e.target.result}" alt="Autó előnézet">`;
+      preview.classList.add('has-image');
+    }
+
     selectedImage = {
       dataUrl: e.target.result,
       name: file.name
     };
-    
+
     console.log('📷 Kép betöltve, méret:', Math.round(e.target.result.length / 1024) + 'KB');
   };
   reader.readAsDataURL(file);
 }
 
 function clearImage() {
-  document.getElementById('carImage').value = '';
-  document.getElementById('imageFileName').textContent = 'Nincs kép kiválasztva';
-  document.getElementById('imagePreview').innerHTML = '';
+  const fileInput = document.getElementById('carImage');
+  if (fileInput) {
+    fileInput.value = '';
+  }
+
+  const preview = document.getElementById('imagePreview');
+  if (preview) {
+    preview.innerHTML = '<span class="modern-image-placeholder">Nincs kép kiválasztva</span>';
+    preview.classList.remove('has-image');
+  }
+
   selectedImage = null;
 }
 
