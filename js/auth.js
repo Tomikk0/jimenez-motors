@@ -151,6 +151,10 @@ function updateUIForLoginState() {
     const displayMode = adminFunctions.classList.contains('admin-actions') ? 'flex' : 'block';
     adminFunctions.style.display = isLoggedIn ? displayMode : 'none';
   }
+
+  if (typeof updateNewsAdminControls === 'function') {
+    updateNewsAdminControls();
+  }
   
   const tagAdminFunctions = document.getElementById('tagAdminFunctions');
   if (tagAdminFunctions) tagAdminFunctions.style.display = isAdminUser ? 'block' : 'none';

@@ -59,6 +59,7 @@ function allowed_table(string $table): string
         'app_users',
         'tuning_options',
         'car_models',
+        'news',
     ];
 
     if (!in_array($table, $allowed, true)) {

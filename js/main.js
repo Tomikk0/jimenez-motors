@@ -148,6 +148,9 @@ function showPage(pageName) {
       case 'autok':
         console.log('🚗 Autók betöltése...');
         loadCars();
+        if (typeof loadNews === 'function') {
+          loadNews();
+        }
         break;
       case 'eladottAutok':
         console.log('✅ Eladott autók betöltése...');
@@ -271,6 +274,14 @@ function applyBootstrapData(data) {
     updateTagCaches([]);
   }
 
+  if (typeof setNews === 'function') {
+    if (Array.isArray(data.news)) {
+      setNews(data.news);
+    } else {
+      setNews([]);
+    }
+  }
+
   if (typeof setCars === 'function') {
     if (Array.isArray(data.cars)) {
       setCars(data.cars);
@@ -304,7 +315,8 @@ async function loadAllData() {
         loadTuningOptions(),
         loadModelOptions(),
         loadTagOptions(),
-        loadCars()
+        loadCars(),
+        loadNews()
       ]);
     }
 

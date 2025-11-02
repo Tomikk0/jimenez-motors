@@ -43,6 +43,16 @@
     <button onclick="openAddCarModal()" class="modern-btn-primary">➕ Autó hozzáadása</button>
     <button onclick="loadCars(true)" class="modern-btn-secondary">🔄 Lista frissítése</button>
   </div>
+  <section class="modern-news-section">
+    <div class="modern-news-header">
+      <h3>📰 Hírek</h3>
+      <button id="addNewsButton" class="modern-btn-primary" style="display: none;" onclick="openAddNewsModal()">➕ Hír hozzáadása</button>
+    </div>
+    <div id="newsMessage" class="message" style="display: none;"></div>
+    <div id="newsList" class="modern-news-list">
+      <div class="news-empty">Nincsenek friss hírek</div>
+    </div>
+  </section>
     <div class="modern-form-card">
       <div class="modern-form-header">
         <h3>🚗 Eladó autók</h3>
@@ -508,6 +518,30 @@
         <button type="button" class="modern-btn-primary" onclick="addCar()">➕ Autó hozzáadása</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="addNewsModal" class="edit-modal" style="display: none;" onclick="if (event.target === this) closeAddNewsModal()">
+  <div class="edit-modal-content" style="max-width: 540px;" role="dialog" aria-modal="true">
+    <div class="edit-modal-header">
+      <h3>📰 Új hír</h3>
+      <span class="edit-close" onclick="closeAddNewsModal()">&times;</span>
+    </div>
+    <form class="edit-modal-body" onsubmit="submitNews(event)">
+      <div id="newsFormMessage" class="message" style="display: none;"></div>
+      <div class="modern-form-group">
+        <label for="newsTitle">Cím</label>
+        <input type="text" id="newsTitle" class="modern-input" placeholder="Add meg a hír címét..." maxlength="180">
+      </div>
+      <div class="modern-form-group">
+        <label for="newsContent">Leírás</label>
+        <textarea id="newsContent" class="modern-textarea" rows="5" placeholder="Írd le a fontos tudnivalókat..."></textarea>
+      </div>
+      <div class="edit-modal-footer">
+        <button type="button" class="modern-btn-secondary" onclick="closeAddNewsModal()">Mégse</button>
+        <button type="submit" id="newsSubmitButton" class="modern-btn-primary">Hír mentése</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -1029,6 +1063,7 @@
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/news.js"></script>
 <script src="js/main.js"></script>
 <script src="js/cars.js"></script>
 <script src="js/soldcars.js"></script> <!-- ÚJ FÁJL -->
