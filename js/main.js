@@ -412,79 +412,48 @@ function renderTuningOptions(options) {
       return;
     }
 
-    const groups = new Map();
-
-    options.forEach(optText => {
-      const safeText = (optText || '').trim();
-      if (!safeText) return;
-
-      const groupName = deriveTuningGroupName(safeText);
-      if (!groups.has(groupName)) {
-        groups.set(groupName, []);
-      }
-
-      groups.get(groupName).push(safeText);
-    });
-
-    const sortedGroups = Array.from(groups.entries())
-      .sort((a, b) => a[0].localeCompare(b[0], 'hu', { sensitivity: 'base' }));
+    const uniqueOptions = Array.from(
+      new Set(
+        options
+          .map(opt => (opt || '').trim())
+          .filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b, 'hu', { numeric: true, sensitivity: 'base' }));
 
     if (compactSection) {
       compactSection.style.display = 'none';
     }
 
-    const fragment = document.createDocumentFragment();
-    const groupElements = [];
+    if (uniqueOptions.length === 0) {
+      container.innerHTML = '<div class="tuning-loading">Nincs tuning opció.</div>';
+      return;
+    }
 
-    const renderButtons = (groupName, values, targetEl) => {
-      values
-        .slice()
-        .sort((a, b) => a.localeCompare(b, 'hu', { numeric: true, sensitivity: 'base' }))
-        .forEach(value => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'modern-tuning-option';
-          button.textContent = value;
-          button.dataset.group = groupName;
-          button.dataset.value = value;
-          button.onclick = () => toggleTuningOption(button);
-          targetEl.appendChild(button);
-        });
-    };
+    const groupName = 'Összes opció';
+    const groupEl = document.createElement('div');
+    groupEl.className = 'tuning-tab-group';
 
-    const pushGroupElement = (element, order, sortKey) => {
-      groupElements.push({ element, order, sortKey });
-    };
+    const titleEl = document.createElement('div');
+    titleEl.className = 'tuning-tab-label';
+    titleEl.textContent = groupName;
+    groupEl.appendChild(titleEl);
 
-    sortedGroups.forEach(([groupName, values]) => {
-      const groupEl = document.createElement('div');
-      groupEl.className = 'tuning-tab-group';
+    const optionsEl = document.createElement('div');
+    optionsEl.className = 'tuning-tab-options';
 
-      const titleEl = document.createElement('div');
-      titleEl.className = 'tuning-tab-label';
-      titleEl.textContent = groupName;
-      groupEl.appendChild(titleEl);
-
-      const optionsEl = document.createElement('div');
-      optionsEl.className = 'tuning-tab-options';
-      renderButtons(groupName, values, optionsEl);
-
-      groupEl.appendChild(optionsEl);
-      const isMotorGroup = groupName.toLowerCase().startsWith('motor');
-      pushGroupElement(groupEl, isMotorGroup ? 0 : 1, groupName.toLowerCase());
+    uniqueOptions.forEach(value => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'modern-tuning-option';
+      button.textContent = value;
+      button.dataset.group = groupName;
+      button.dataset.value = value;
+      button.onclick = () => toggleTuningOption(button);
+      optionsEl.appendChild(button);
     });
 
-    groupElements
-      .sort((a, b) => {
-        if (a.order !== b.order) {
-          return a.order - b.order;
-        }
-
-        return a.sortKey.localeCompare(b.sortKey, 'hu', { sensitivity: 'base' });
-      })
-      .forEach(item => fragment.appendChild(item.element));
-
-    container.appendChild(fragment);
+    groupEl.appendChild(optionsEl);
+    container.appendChild(groupEl);
   } catch (error) {
     console.error('renderTuningOptions hiba:', error);
     const compactSection = document.getElementById('addCarCompactSection');
