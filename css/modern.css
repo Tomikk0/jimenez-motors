@@ -131,8 +131,8 @@ body::after {
 /* Navigation */
 .page.active {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  gap: 28px;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 32px;
   align-items: start;
   position: relative;
   z-index: 1;
@@ -146,16 +146,47 @@ body::after {
   background: linear-gradient(160deg, rgba(30, 6, 25, 0.95) 0%, rgba(59, 12, 35, 0.85) 100%);
   backdrop-filter: blur(22px);
   border-radius: 26px;
-  padding: 22px 18px;
+  padding: 26px 22px 26px 26px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   justify-content: flex-start;
   min-height: 100%;
   position: sticky;
   top: 36px;
+  width: 260px;
+  transform: translateX(calc(-100% + 88px));
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.35s ease,
+              border-color 0.35s ease;
+  z-index: 5;
+  overflow: visible;
+}
+
+.main-nav::after {
+  content: '';
+  position: absolute;
+  inset: 24px auto 24px -18px;
+  width: 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 95, 126, 0.65), rgba(255, 183, 99, 0.35));
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 30px rgba(255, 95, 126, 0.25);
+  transition: opacity 0.35s ease;
+  opacity: 0.8;
+}
+
+.main-nav:hover,
+.main-nav:focus-within {
+  transform: translateX(0);
+  box-shadow: 0 38px 70px rgba(0, 0, 0, 0.55);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.main-nav:hover::after,
+.main-nav:focus-within::after {
+  opacity: 0;
 }
 
 .nav-btn {
@@ -170,6 +201,11 @@ body::after {
   position: relative;
   overflow: hidden;
   text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .nav-btn::after {
@@ -1234,6 +1270,7 @@ select:focus {
 
   .page.active {
     grid-template-columns: 1fr;
+    gap: 24px;
   }
 
   .main-nav {
@@ -1244,6 +1281,13 @@ select:focus {
     gap: 12px;
     overflow-x: auto;
     justify-content: flex-start;
+    transform: none;
+    width: auto;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .main-nav::after {
+    display: none;
   }
 
   .nav-btn {
@@ -1265,6 +1309,16 @@ select:focus {
   .nav-btn {
     min-width: 140px;
     padding: 12px 16px;
+  }
+}
+
+@media (hover: none) {
+  .main-nav {
+    transform: none;
+  }
+
+  .main-nav::after {
+    opacity: 0;
   }
 }
 .modern-form-card {
