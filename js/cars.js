@@ -1,6 +1,48 @@
 // === AUTÓ KEZELÉSI FUNKCIÓK ===
 const currencyFormatterHU = new Intl.NumberFormat('hu-HU');
 
+function transformCarRow(car) {
+  if (!car || typeof car !== 'object') {
+    return null;
+  }
+
+  const formattedPurchase = car.purchase_price ? currencyFormatterHU.format(car.purchase_price) : '';
+  const formattedDesired = car.desired_price ? currencyFormatterHU.format(car.desired_price) : '';
+  const formattedSale = car.sale_price ? currencyFormatterHU.format(car.sale_price) : '';
+  const preparedImageUrl = car.image_url ? getImageUrl(car.image_url) : (car.image_data_url || '');
+
+  return {
+    ...car,
+    VetelArFormatted: formattedPurchase,
+    KivantArFormatted: formattedDesired,
+    EladasiArFormatted: formattedSale,
+    Model: car.model,
+    Tuning: car.tuning,
+    VetelAr: car.purchase_price,
+    KivantAr: car.desired_price,
+    EladasiAr: car.sale_price,
+    Eladva: car.sold,
+    Hozzáadta: car.added_by,
+    KepURL: preparedImageUrl,
+    sold_by: car.sold_by,
+    sold_at: car.sold_at
+  };
+}
+
+function setCars(rows) {
+  const validRows = Array.isArray(rows) ? rows.filter(Boolean) : [];
+  const prepared = validRows.map(transformCarRow).filter(Boolean);
+
+  allCars = prepared;
+  carsLoaded = true;
+  carsLoadingPromise = null;
+
+  console.log('🚗 Autó lista frissítve:', prepared.length, 'db');
+  renderCars(allCars);
+
+  return prepared;
+}
+
 async function loadCars(force = false) {
   const grid = document.getElementById('carCardGrid');
 
@@ -39,34 +81,9 @@ async function loadCars(force = false) {
     }
 
     const rows = Array.isArray(data) ? data : [];
-    allCars = rows.map(car => {
-      const formattedPurchase = car.purchase_price ? currencyFormatterHU.format(car.purchase_price) : '';
-      const formattedDesired = car.desired_price ? currencyFormatterHU.format(car.desired_price) : '';
-      const formattedSale = car.sale_price ? currencyFormatterHU.format(car.sale_price) : '';
-      const preparedImageUrl = car.image_url ? getImageUrl(car.image_url) : (car.image_data_url || '');
-
-      return {
-        ...car,
-        VetelArFormatted: formattedPurchase,
-        KivantArFormatted: formattedDesired,
-        EladasiArFormatted: formattedSale,
-        Model: car.model,
-        Tuning: car.tuning,
-        VetelAr: car.purchase_price,
-        KivantAr: car.desired_price,
-        EladasiAr: car.sale_price,
-        Eladva: car.sold,
-        Hozzáadta: car.added_by,
-        KepURL: preparedImageUrl,
-        sold_by: car.sold_by,
-        sold_at: car.sold_at
-      };
-    });
-
-    carsLoaded = true;
-    console.log('🚗 Autók betöltve - Csak nem eladottak:', allCars.length, 'db');
-    renderCars(allCars);
-    return allCars;
+    const prepared = setCars(rows);
+    console.log('🚗 Autók betöltve - Csak nem eladottak:', prepared.length, 'db');
+    return prepared;
   })();
 
   const handledPromise = fetchPromise.catch(error => {

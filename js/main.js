@@ -222,17 +222,92 @@ function loadCurrentPage() {
 }
 
 // === ADATBETÖLTÉS ===
+async function fetchBootstrapData() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bootstrap.php`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      },
+      cache: 'no-store'
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok || payload.error || !payload.data) {
+      const errorMessage = payload && payload.error ? payload.error.message : 'Ismeretlen hiba a bootstrap során';
+      throw new Error(errorMessage);
+    }
+
+    return payload.data;
+  } catch (error) {
+    console.warn('⚠️ Bootstrap betöltés sikertelen, visszatérés az egyedi lekérésekre', error);
+    return null;
+  }
+}
+
+function applyBootstrapData(data) {
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+
+  if (Array.isArray(data.tuningOptions)) {
+    tuningOptions = data.tuningOptions.slice();
+    renderTuningOptions(tuningOptions);
+  } else {
+    tuningOptions = [];
+    renderTuningOptions(tuningOptions);
+  }
+
+  if (Array.isArray(data.modelOptions)) {
+    modelOptions = data.modelOptions.slice();
+  } else {
+    modelOptions = [];
+  }
+
+  if (Array.isArray(data.members)) {
+    updateTagCaches(data.members);
+  } else {
+    updateTagCaches([]);
+  }
+
+  if (typeof setCars === 'function') {
+    if (Array.isArray(data.cars)) {
+      setCars(data.cars);
+    } else {
+      setCars([]);
+    }
+  } else {
+    const fallbackCars = Array.isArray(data.cars) ? data.cars : [];
+    allCars = typeof transformCarRow === 'function'
+      ? fallbackCars.map(transformCarRow).filter(Boolean)
+      : fallbackCars;
+    carsLoaded = true;
+    if (typeof renderCars === 'function') {
+      renderCars(allCars);
+    }
+  }
+
+  return true;
+}
+
 async function loadAllData() {
   try {
     console.log('🔄 Összes adat betöltése...');
-    
-    await Promise.all([
-      loadTuningOptions(),
-      loadModelOptions(),
-      loadTagOptions(),
-      loadCars()
-    ]);
-    
+
+    const bootstrapData = await fetchBootstrapData();
+
+    if (bootstrapData) {
+      applyBootstrapData(bootstrapData);
+    } else {
+      await Promise.all([
+        loadTuningOptions(),
+        loadModelOptions(),
+        loadTagOptions(),
+        loadCars()
+      ]);
+    }
+
     console.log('✅ Összes adat sikeresen betöltve');
   } catch (error) {
     console.error('❌ loadAllData hiba:', error);
