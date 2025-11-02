@@ -84,10 +84,14 @@ function renderNews(list) {
 
     const newsArticle = document.createElement('article');
     newsArticle.className = 'news-card';
+    const metaMarkup = metaParts.length
+      ? `<footer class="news-card-meta">${metaParts.map(part => `<span>${part}</span>`).join('')}</footer>`
+      : '';
+
     newsArticle.innerHTML = `
       <h4 class="news-card-title">${safeTitle}</h4>
       <div class="news-card-content">${safeContent}</div>
-      <footer class="news-card-meta">${metaParts.join(' • ')}</footer>
+      ${metaMarkup}
     `;
 
     fragment.appendChild(newsArticle);
