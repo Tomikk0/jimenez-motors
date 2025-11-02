@@ -1,16 +1,41 @@
-// === SUPABASE KAPCSOLAT === 
-const supabaseUrl = 'https://abpmluenermqghrrtjhq.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFicG1sdWVuZXJtcWdocnJ0amhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3MTYzMjgsImV4cCI6MjA3NjI5MjMyOH0.YkTZME_BB86r3mM8AyNYu-2yaMdh4LtDhHbynvdkaKA';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+// === HELYI API KAPCSOLAT ===
+const API_BASE_URL = 'api';
+// A `supabase` változó visszafelé kompatibilis alias; valójában a PHP + MariaDB API-t hívja.
+const supabase = window.apiClient || window.createLocalClient(API_BASE_URL);
+window.dbClient = supabase;
+window.API_BASE_URL = API_BASE_URL;
 
 // Globális változók
 let tuningOptions = [];
 let modelOptions = [];
 let tagOptions = [];
+let tagOptionMap = new Map();
 let allCars = [];
+let carsLoaded = false;
+let carsLoadingPromise = null;
 let currentUser = null;
 let searchTimeout;
 let selectedImage = null;
 let currentCarIdForSale = null;
 let currentKickMemberName = null;
 let gallerySelectedImage = null;
+
+function updateTagCaches(list) {
+  if (!Array.isArray(list)) {
+    tagOptions = [];
+    tagOptionMap = new Map();
+  } else {
+    tagOptions = list.slice();
+    tagOptionMap = new Map(tagOptions.map(tag => [tag.name, tag]));
+  }
+
+  if (typeof renderCars === 'function' && Array.isArray(allCars) && allCars.length > 0) {
+    try {
+      renderCars(allCars);
+    } catch (error) {
+      console.error('renderCars frissítés hiba:', error);
+    }
+  }
+}
+
+window.updateTagCaches = updateTagCaches;

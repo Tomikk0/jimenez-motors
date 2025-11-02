@@ -43,12 +43,63 @@
     <div class="modern-form-card">
       <div class="modern-form-header">
         <h3>🚗 Új autó hozzáadása</h3>
-        <p>Nyisd meg a modalt, hogy egyetlen képernyőn kitölts mindent.</p>
       </div>
 
-      <div class="modern-form-actions single">
-        <button onclick="openAddCarModal()" class="modern-btn-primary">➕ Autó hozzáadása</button>
-        <button onclick="loadCars(true)" class="modern-btn-secondary">🔄 Lista frissítése</button>
+      <div class="modern-form-row">
+        <div class="modern-form-group">
+          <label for="modelSearch">🔍 Modell</label>
+          <div class="model-search-container modern">
+            <input type="text" id="modelSearch" class="modern-input" placeholder="Keresés modellek között..." 
+                   onfocus="showModelDropdown()" oninput="filterModels()">
+            <div id="modelDropdown" class="model-dropdown modern"></div>
+          </div>
+        </div>
+
+        <div class="modern-form-group">
+          <label for="vetel">💰 Vételiár</label>
+          <div class="modern-input-container price">
+            <input type="text" id="vetel" class="modern-input" placeholder="0" 
+                   oninput="formatInputPrice(this)">
+          </div>
+        </div>
+
+        <div class="modern-form-group">
+          <label for="kivant">🎯 Kívánt minimmum ár</label>
+          <div class="modern-input-container price">
+            <input type="text" id="kivant" class="modern-input" placeholder="0" 
+                   oninput="formatInputPrice(this)">
+          </div>
+        </div>
+
+        <div class="modern-form-group">
+          <label for="eladas">💵 Eladási ár</label>
+          <div class="modern-input-container price">
+            <input type="text" id="eladas" class="modern-input" placeholder="0" 
+                   oninput="formatInputPrice(this)">
+          </div>
+        </div>
+      </div>
+
+      <div class="modern-image-section">
+        <h4>📷 Autó képe</h4>
+        <div class="modern-image-upload-container">
+          <input type="file" id="carImage" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
+          <button type="button" onclick="document.getElementById('carImage').click()" class="modern-image-upload-btn">
+            📁 Kép kiválasztása
+          </button>
+          <span id="imageFileName" class="modern-image-file-name">Nincs kép kiválasztva</span>
+        </div>
+        <div id="imagePreview" class="modern-image-preview"></div>
+      </div>
+
+      <div class="modern-form-group">
+        <label>🔧 Tuning opciók</label>
+        <div id="tuningContainer" class="modern-tuning-container">Betöltés...</div>
+      </div>
+
+      <div class="modern-form-actions">
+        <button onclick="addCar()" class="modern-btn-primary">➕ Autó hozzáadása</button>
+        <button onclick="loadCars(true)" class="modern-btn-secondary">🔄 Frissítés</button>
       </div>
     </div>
   </div>
@@ -434,90 +485,6 @@
     </table>
   </div>
 </div>
-</div>
-
-<!-- ÚJ AUTÓ MODAL -->
-<div id="addCarModal" class="edit-modal" style="display: none;" onclick="if (event.target === this) closeAddCarModal()">
-  <div class="edit-modal-content add-car-modal">
-    <div class="edit-modal-header">
-      <h3>🚗 Új autó felvitele</h3>
-      <span class="edit-close" onclick="closeAddCarModal()">&times;</span>
-    </div>
-
-    <div class="edit-modal-body add-car-modal-body">
-      <section class="add-car-column">
-        <div class="add-car-fields">
-          <div class="add-car-field full">
-            <label for="modelSearch">🔍 Modell</label>
-            <div class="model-search-container modern">
-              <input type="text" id="modelSearch" class="modern-input" placeholder="Keresés modellek között..."
-                     onfocus="showModelDropdown()" oninput="filterModels()">
-              <div id="modelDropdown" class="model-dropdown modern"></div>
-            </div>
-          </div>
-
-          <div class="add-car-field">
-            <label for="vetel">💰 Vételi ár</label>
-            <div class="modern-input-container price">
-              <input type="text" id="vetel" class="modern-input" placeholder="0"
-                     oninput="formatInputPrice(this)">
-            </div>
-          </div>
-
-          <div class="add-car-field">
-            <label for="kivant">🎯 Minimum ár</label>
-            <div class="modern-input-container price">
-              <input type="text" id="kivant" class="modern-input" placeholder="0"
-                     oninput="formatInputPrice(this)">
-            </div>
-          </div>
-
-          <div class="add-car-field">
-            <label for="eladas">💵 Eladási ár</label>
-            <div class="modern-input-container price">
-              <input type="text" id="eladas" class="modern-input" placeholder="0"
-                     oninput="formatInputPrice(this)">
-            </div>
-          </div>
-        </div>
-
-        <div class="add-car-image">
-          <h4>📷 Autó képe</h4>
-          <div class="modern-image-upload-container">
-            <input type="file" id="carImage" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
-            <button type="button" onclick="document.getElementById('carImage').click()" class="modern-image-upload-btn">
-              📁 Kép kiválasztása
-            </button>
-            <span id="imageFileName" class="modern-image-file-name">Nincs kép kiválasztva</span>
-          </div>
-          <div id="imagePreview" class="modern-image-preview"></div>
-          <div id="addCarCompactSection" class="add-car-compact-section" style="display: none;">
-            <h4>Egyéb opciók</h4>
-            <div id="addCarCompactOptions" class="add-car-compact-options"></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="add-car-column">
-        <div class="add-car-tunings">
-          <div class="add-car-tuning-header">
-            <h4>🔧 Tuning csomagok</h4>
-            <p>Válassz kategóriánként egy opciót – kiválasztás után a többi eltűnik.</p>
-          </div>
-          <div id="addCarTuningContainer" class="add-car-tuning-groups">
-            <div class="tuning-loading">Betöltés...</div>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <div class="edit-modal-footer add-car-modal-footer">
-      <div class="add-car-footer-actions">
-        <button type="button" class="modern-btn-secondary" onclick="closeAddCarModal()">Mégse</button>
-        <button type="button" class="modern-btn-primary" onclick="addCar()">➕ Autó hozzáadása</button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- TUNINGOK OLDAL -->
@@ -1050,3 +1017,7 @@
 </body>
 
 </html>
+
+
+
+

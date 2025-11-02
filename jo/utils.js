@@ -365,34 +365,12 @@ function onGalleryModelSelected(model) {
 // Inputok törlése
 function clearInputs() {
   try {
-    const modelInput = document.getElementById('modelSearch');
-    if (modelInput) modelInput.value = '';
-
-    const vetelInput = document.getElementById('vetel');
-    if (vetelInput) vetelInput.value = '';
-
-    const kivantInput = document.getElementById('kivant');
-    if (kivantInput) kivantInput.value = '';
-
-    const eladasInput = document.getElementById('eladas');
-    if (eladasInput) eladasInput.value = '';
-
-    const newTagInput = document.getElementById('newTag');
-    if (newTagInput) newTagInput.value = '';
-
-    if (typeof resetTuningOptionVisibility === 'function') {
-      resetTuningOptionVisibility();
-    } else {
-      document.querySelectorAll('.modern-tuning-option').forEach(div => {
-        div.classList.remove('selected');
-        div.classList.remove('option-hidden');
-        div.style.transform = 'translateY(0) scale(1)';
-      });
-    }
-
-    const dropdown = document.getElementById('modelDropdown');
-    if (dropdown) dropdown.style.display = 'none';
-
+    document.getElementById('modelSearch').value = '';
+    document.getElementById('vetel').value = '';
+    document.getElementById('kivant').value = '';
+    document.getElementById('eladas').value = '';
+    document.querySelectorAll('.modern-tuning-option').forEach(div => div.classList.remove('selected'));
+    document.getElementById('modelDropdown').style.display = 'none';
     clearImage();
   } catch (error) {
     console.error('clearInputs hiba:', error);

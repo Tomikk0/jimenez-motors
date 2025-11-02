@@ -338,150 +338,33 @@ async function loadTuningOptions() {
   }
 }
 
-function deriveTuningGroupName(rawName) {
-  const safeName = (rawName || '').trim();
-  if (!safeName) return 'Egyéb';
-
-  const normalized = safeName.replace(/\s+/g, ' ');
-  const prefixMatch = normalized.match(/^[^0-9]+/);
-  let group = prefixMatch && prefixMatch[0] ? prefixMatch[0] : normalized.split(' ')[0];
-
-  group = group.replace(/[-:_]+$/, '').trim();
-  if (!group) {
-    group = normalized;
-  }
-
-  return group.charAt(0).toUpperCase() + group.slice(1);
-}
-
-const EXCLUSIVE_TUNING_CATEGORIES = new Set(['chip', 'fek', 'fekek', 'valto', 'motor']);
-
-function normalizeTuningCategory(name) {
-  if (!name) return '';
-
-  try {
-    return name
-      .toString()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-      .replace(/[^a-z0-9]+/g, '');
-  } catch (error) {
-    console.error('normalizeTuningCategory hiba:', error);
-    return name.toString().toLowerCase();
-  }
-}
-
-function toggleTuningOption(button) {
-  try {
-    if (!button) return;
-
-    const category = button.dataset.category || button.dataset.group || '';
-    const normalizedCategory = normalizeTuningCategory(category);
-    const isExclusive = EXCLUSIVE_TUNING_CATEGORIES.has(normalizedCategory);
-
-    if (isExclusive) {
-      const matchingOptions = Array.from(document.querySelectorAll('.modern-tuning-option'))
-        .filter(opt => normalizeTuningCategory(opt.dataset.category || opt.dataset.group || '') === normalizedCategory);
-
-      matchingOptions.forEach(opt => {
-        if (opt !== button) {
-          opt.classList.remove('selected', 'option-hidden');
-          opt.style.transform = 'translateY(0) scale(1)';
-        }
-      });
-    }
-
-    const isSelected = button.classList.contains('selected');
-
-    if (isSelected) {
-      button.classList.remove('selected');
-      button.style.transform = 'translateY(0) scale(1)';
-    } else {
-      button.classList.add('selected');
-      button.style.transform = 'translateY(-2px) scale(1.05)';
-    }
-  } catch (error) {
-    console.error('toggleTuningOption hiba:', error);
-  }
-}
-
-function resetTuningOptionVisibility() {
-  try {
-    document.querySelectorAll('.modern-tuning-option').forEach(opt => {
-      opt.classList.remove('selected', 'option-hidden');
-      opt.style.transform = 'translateY(0) scale(1)';
-    });
-  } catch (error) {
-    console.error('resetTuningOptionVisibility hiba:', error);
-  }
-}
-
 function renderTuningOptions(options) {
   try {
-    const container = document.getElementById('addCarTuningContainer');
-    const compactSection = document.getElementById('addCarCompactSection');
+    const container = document.getElementById('tuningContainer');
     if (!container) return;
-
+    
     container.innerHTML = '';
     if (!options || options.length === 0) {
-      container.innerHTML = '<div class="tuning-loading">Nincs tuning opció.</div>';
-      if (compactSection) {
-        compactSection.style.display = 'none';
-      }
+      container.textContent = 'Nincs tuning opció.';
       return;
     }
-
-    const uniqueOptions = Array.from(
-      new Set(
-        options
-          .map(opt => (opt || '').trim())
-          .filter(Boolean)
-      )
-    ).sort((a, b) => a.localeCompare(b, 'hu', { numeric: true, sensitivity: 'base' }));
-
-    if (compactSection) {
-      compactSection.style.display = 'none';
-    }
-
-    if (uniqueOptions.length === 0) {
-      container.innerHTML = '<div class="tuning-loading">Nincs tuning opció.</div>';
-      return;
-    }
-
-    const groupName = 'Összes opció';
-    const groupEl = document.createElement('div');
-    groupEl.className = 'tuning-tab-group';
-
-    const titleEl = document.createElement('div');
-    titleEl.className = 'tuning-tab-label';
-    titleEl.textContent = groupName;
-    groupEl.appendChild(titleEl);
-
-    const optionsEl = document.createElement('div');
-    optionsEl.className = 'tuning-tab-options';
-
-    uniqueOptions.forEach(value => {
-      const category = deriveTuningGroupName(value);
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'modern-tuning-option';
-      button.textContent = value;
-      button.dataset.group = groupName;
-      button.dataset.category = category;
-      button.dataset.value = value;
-      button.onclick = () => toggleTuningOption(button);
-      optionsEl.appendChild(button);
+    
+    options.forEach(optText => {
+      const div = document.createElement('div');
+      div.className = 'modern-tuning-option';
+      div.textContent = escapeHtml(optText);
+      div.onclick = () => {
+        div.classList.toggle('selected');
+        if (div.classList.contains('selected')) {
+          div.style.transform = 'translateY(-2px) scale(1.05)';
+        } else {
+          div.style.transform = 'translateY(0) scale(1)';
+        }
+      };
+      container.appendChild(div);
     });
-
-    groupEl.appendChild(optionsEl);
-    container.appendChild(groupEl);
   } catch (error) {
     console.error('renderTuningOptions hiba:', error);
-    const compactSection = document.getElementById('addCarCompactSection');
-    if (compactSection) {
-      compactSection.style.display = 'none';
-    }
   }
 }
 
