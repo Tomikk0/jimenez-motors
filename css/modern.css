@@ -878,6 +878,10 @@ select:focus {
   padding: 10px 14px;
   margin-bottom: 10px;
   transition: all 0.2s ease;
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
 }
 
 .modern-tuning-option:hover {
@@ -890,6 +894,138 @@ select:focus {
   border-color: rgba(37, 99, 235, 0.45);
   color: var(--ui-text);
   box-shadow: 0 15px 30px rgba(37, 99, 235, 0.2);
+}
+
+.modern-tuning-option.option-hidden {
+  display: none;
+}
+
+.add-car-modal {
+  max-width: 1080px;
+}
+
+.add-car-modal .edit-modal-body {
+  padding: 32px 40px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  gap: 32px;
+  overflow: visible;
+  max-height: none;
+}
+
+.add-car-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.add-car-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  gap: 18px;
+}
+
+.add-car-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--ui-text);
+}
+
+.add-car-field.full {
+  grid-column: 1 / -1;
+}
+
+.add-car-image h4 {
+  margin-bottom: 10px;
+  font-size: 1.05rem;
+  color: var(--ui-text);
+}
+
+.add-car-tunings {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.add-car-tuning-header h4 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+  color: var(--ui-text);
+}
+
+.add-car-tuning-header p {
+  margin: 0;
+  color: var(--ui-text-muted);
+  font-size: 0.9rem;
+}
+
+.add-car-tuning-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.tuning-group {
+  background: rgba(231, 236, 248, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tuning-group-title {
+  font-weight: 700;
+  color: var(--ui-text);
+  font-size: 0.95rem;
+}
+
+.tuning-group-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.add-car-modal-footer {
+  padding: 18px 32px;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(231, 236, 248, 0.9);
+  border-top: 1px solid var(--ui-divider);
+}
+
+.add-car-footer-actions {
+  display: flex;
+  gap: 14px;
+}
+
+.tuning-loading {
+  text-align: center;
+  color: var(--ui-text-muted);
+  padding: 24px 0;
+}
+
+@media (max-width: 1100px) {
+  .add-car-modal .edit-modal-body {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .add-car-fields {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .add-car-modal {
+    max-width: 96%;
+  }
+
+  .add-car-modal .edit-modal-body {
+    padding: 24px;
+  }
 }
 
 .sale-type-card {

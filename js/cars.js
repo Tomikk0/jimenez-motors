@@ -1,5 +1,59 @@
 // === AUTÓ KEZELÉSI FUNKCIÓK ===
 const currencyFormatterHU = new Intl.NumberFormat('hu-HU');
+let addCarModalEscHandler = null;
+
+function openAddCarModal() {
+  try {
+    if (!currentUser) {
+      showMessage('Bejelentkezés szükséges!', 'warning');
+      return;
+    }
+
+    clearInputs();
+
+    const modal = document.getElementById('addCarModal');
+    if (!modal) return;
+
+    modal.style.display = 'block';
+    modal.classList.add('active');
+
+    setTimeout(() => {
+      const input = document.getElementById('modelSearch');
+      if (input) {
+        input.focus();
+      }
+    }, 150);
+
+    if (!addCarModalEscHandler) {
+      addCarModalEscHandler = (event) => {
+        if (event.key === 'Escape') {
+          closeAddCarModal();
+        }
+      };
+    }
+
+    document.addEventListener('keydown', addCarModalEscHandler);
+  } catch (error) {
+    console.error('openAddCarModal hiba:', error);
+  }
+}
+
+function closeAddCarModal() {
+  try {
+    const modal = document.getElementById('addCarModal');
+    if (!modal) return;
+
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+
+    if (addCarModalEscHandler) {
+      document.removeEventListener('keydown', addCarModalEscHandler);
+      addCarModalEscHandler = null;
+    }
+  } catch (error) {
+    console.error('closeAddCarModal hiba:', error);
+  }
+}
 
 function transformCarRow(car) {
   if (!car || typeof car !== 'object') {
@@ -248,7 +302,7 @@ async function addCar() {
 
     const selectedModel = document.getElementById('modelSearch').value.trim();
     const selectedTuning = Array.from(document.querySelectorAll('.modern-tuning-option.selected'))
-      .map(div => div.textContent)
+      .map(div => div.dataset.value || div.textContent)
       .join(', ');
 
     if (!selectedModel) {
@@ -290,7 +344,7 @@ async function addCar() {
       console.log('✅ Autó hozzáadva:', data);
       showMessage('Autó sikeresen hozzáadva!', 'success');
       clearInputs();
-      clearImage();
+      closeAddCarModal();
       await loadCars(true);
       loadStats();
     }

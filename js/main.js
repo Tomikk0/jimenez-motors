@@ -338,31 +338,126 @@ async function loadTuningOptions() {
   }
 }
 
+function deriveTuningGroupName(rawName) {
+  const safeName = (rawName || '').trim();
+  if (!safeName) return 'Egyéb';
+
+  const normalized = safeName.replace(/\s+/g, ' ');
+  const prefixMatch = normalized.match(/^[^0-9]+/);
+  let group = prefixMatch && prefixMatch[0] ? prefixMatch[0] : normalized.split(' ')[0];
+
+  group = group.replace(/[-:_]+$/, '').trim();
+  if (!group) {
+    group = normalized;
+  }
+
+  return group.charAt(0).toUpperCase() + group.slice(1);
+}
+
+function toggleTuningOption(button) {
+  try {
+    if (!button) return;
+
+    const groupName = button.dataset.group || '';
+    const groupOptions = Array.from(document.querySelectorAll('.modern-tuning-option'))
+      .filter(opt => (opt.dataset.group || '') === groupName);
+
+    if (button.classList.contains('selected')) {
+      button.classList.remove('selected');
+      button.style.transform = 'translateY(0) scale(1)';
+      groupOptions.forEach(opt => {
+        if (opt !== button) {
+          opt.classList.remove('option-hidden');
+        }
+      });
+    } else {
+      groupOptions.forEach(opt => {
+        if (opt !== button) {
+          opt.classList.remove('selected');
+          opt.classList.add('option-hidden');
+          opt.style.transform = 'translateY(0) scale(1)';
+        }
+      });
+      button.classList.add('selected');
+      button.style.transform = 'translateY(-2px) scale(1.05)';
+    }
+  } catch (error) {
+    console.error('toggleTuningOption hiba:', error);
+  }
+}
+
+function resetTuningOptionVisibility() {
+  try {
+    document.querySelectorAll('.modern-tuning-option').forEach(opt => {
+      opt.classList.remove('selected', 'option-hidden');
+      opt.style.transform = 'translateY(0) scale(1)';
+    });
+  } catch (error) {
+    console.error('resetTuningOptionVisibility hiba:', error);
+  }
+}
+
 function renderTuningOptions(options) {
   try {
-    const container = document.getElementById('tuningContainer');
+    const container = document.getElementById('addCarTuningContainer');
     if (!container) return;
-    
+
     container.innerHTML = '';
     if (!options || options.length === 0) {
-      container.textContent = 'Nincs tuning opció.';
+      container.innerHTML = '<div class="tuning-loading">Nincs tuning opció.</div>';
       return;
     }
-    
+
+    const groups = new Map();
+
     options.forEach(optText => {
-      const div = document.createElement('div');
-      div.className = 'modern-tuning-option';
-      div.textContent = escapeHtml(optText);
-      div.onclick = () => {
-        div.classList.toggle('selected');
-        if (div.classList.contains('selected')) {
-          div.style.transform = 'translateY(-2px) scale(1.05)';
-        } else {
-          div.style.transform = 'translateY(0) scale(1)';
-        }
-      };
-      container.appendChild(div);
+      const safeText = (optText || '').trim();
+      if (!safeText) return;
+
+      const groupName = deriveTuningGroupName(safeText);
+      if (!groups.has(groupName)) {
+        groups.set(groupName, []);
+      }
+
+      groups.get(groupName).push(safeText);
     });
+
+    const sortedGroups = Array.from(groups.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], 'hu', { sensitivity: 'base' }));
+
+    const fragment = document.createDocumentFragment();
+
+    sortedGroups.forEach(([groupName, values]) => {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'tuning-group';
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'tuning-group-title';
+      titleEl.textContent = groupName;
+      groupEl.appendChild(titleEl);
+
+      const optionsEl = document.createElement('div');
+      optionsEl.className = 'tuning-group-options';
+
+      values
+        .slice()
+        .sort((a, b) => a.localeCompare(b, 'hu', { numeric: true, sensitivity: 'base' }))
+        .forEach(value => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'modern-tuning-option';
+          button.textContent = escapeHtml(value);
+          button.dataset.group = groupName;
+          button.dataset.value = value;
+          button.onclick = () => toggleTuningOption(button);
+          optionsEl.appendChild(button);
+        });
+
+      groupEl.appendChild(optionsEl);
+      fragment.appendChild(groupEl);
+    });
+
+    container.appendChild(fragment);
   } catch (error) {
     console.error('renderTuningOptions hiba:', error);
   }
