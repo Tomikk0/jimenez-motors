@@ -354,22 +354,45 @@ function deriveTuningGroupName(rawName) {
   return group.charAt(0).toUpperCase() + group.slice(1);
 }
 
+const EXCLUSIVE_TUNING_CATEGORIES = new Set(['chip', 'fek', 'fekek', 'valto', 'motor']);
+
+function normalizeTuningCategory(name) {
+  if (!name) return '';
+
+  try {
+    return name
+      .toString()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .replace(/[^a-z0-9]+/g, '');
+  } catch (error) {
+    console.error('normalizeTuningCategory hiba:', error);
+    return name.toString().toLowerCase();
+  }
+}
+
 function toggleTuningOption(button) {
   try {
     if (!button) return;
 
-    const groupName = button.dataset.group || '';
-    const groupOptions = Array.from(document.querySelectorAll('.modern-tuning-option'))
-      .filter(opt => (opt.dataset.group || '') === groupName);
+    const category = button.dataset.category || button.dataset.group || '';
+    const normalizedCategory = normalizeTuningCategory(category);
+    const isExclusive = EXCLUSIVE_TUNING_CATEGORIES.has(normalizedCategory);
+
+    if (isExclusive) {
+      const matchingOptions = Array.from(document.querySelectorAll('.modern-tuning-option'))
+        .filter(opt => normalizeTuningCategory(opt.dataset.category || opt.dataset.group || '') === normalizedCategory);
+
+      matchingOptions.forEach(opt => {
+        if (opt !== button) {
+          opt.classList.remove('selected', 'option-hidden');
+          opt.style.transform = 'translateY(0) scale(1)';
+        }
+      });
+    }
 
     const isSelected = button.classList.contains('selected');
-
-    groupOptions.forEach(opt => {
-      if (opt !== button) {
-        opt.classList.remove('selected', 'option-hidden');
-        opt.style.transform = 'translateY(0) scale(1)';
-      }
-    });
 
     if (isSelected) {
       button.classList.remove('selected');
@@ -439,11 +462,13 @@ function renderTuningOptions(options) {
     optionsEl.className = 'tuning-tab-options';
 
     uniqueOptions.forEach(value => {
+      const category = deriveTuningGroupName(value);
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'modern-tuning-option';
       button.textContent = value;
       button.dataset.group = groupName;
+      button.dataset.category = category;
       button.dataset.value = value;
       button.onclick = () => toggleTuningOption(button);
       optionsEl.appendChild(button);
