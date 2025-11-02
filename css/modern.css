@@ -909,8 +909,11 @@ select:focus {
   display: grid;
   grid-template-columns: repeat(2, minmax(320px, 1fr));
   gap: 32px;
-  overflow: visible;
+  overflow-y: auto;
+  overflow-x: hidden;
   max-height: none;
+  flex: 1;
+  align-content: start;
 }
 
 .add-car-column {
@@ -966,6 +969,37 @@ select:focus {
   gap: 16px;
 }
 
+.tuning-group-compact {
+  gap: 18px;
+  padding: 18px 20px;
+}
+
+.tuning-group-compact .tuning-group-multi {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.tuning-subgroup {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px dashed rgba(148, 163, 184, 0.6);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tuning-subgroup-title {
+  font-weight: 600;
+  color: var(--ui-text-muted);
+  font-size: 0.85rem;
+}
+
+.tuning-subgroup-options {
+  gap: 6px;
+}
+
 .tuning-group {
   background: rgba(231, 236, 248, 0.6);
   border: 1px solid rgba(148, 163, 184, 0.3);
@@ -994,6 +1028,8 @@ select:focus {
   justify-content: flex-end;
   background: rgba(231, 236, 248, 0.9);
   border-top: 1px solid var(--ui-divider);
+  position: sticky;
+  bottom: 0;
 }
 
 .add-car-footer-actions {

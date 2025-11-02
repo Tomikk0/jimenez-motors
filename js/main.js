@@ -425,9 +425,37 @@ function renderTuningOptions(options) {
     const sortedGroups = Array.from(groups.entries())
       .sort((a, b) => a[0].localeCompare(b[0], 'hu', { sensitivity: 'base' }));
 
+    const primaryGroups = [];
+    const compactGroups = [];
+
+    sortedGroups.forEach(entry => {
+      const [, values] = entry;
+      if (values.length >= 3) {
+        primaryGroups.push(entry);
+      } else {
+        compactGroups.push(entry);
+      }
+    });
+
     const fragment = document.createDocumentFragment();
 
-    sortedGroups.forEach(([groupName, values]) => {
+    const renderButtons = (groupName, values, targetEl) => {
+      values
+        .slice()
+        .sort((a, b) => a.localeCompare(b, 'hu', { numeric: true, sensitivity: 'base' }))
+        .forEach(value => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'modern-tuning-option';
+          button.textContent = value;
+          button.dataset.group = groupName;
+          button.dataset.value = value;
+          button.onclick = () => toggleTuningOption(button);
+          targetEl.appendChild(button);
+        });
+    };
+
+    primaryGroups.forEach(([groupName, values]) => {
       const groupEl = document.createElement('div');
       groupEl.className = 'tuning-group';
 
@@ -438,24 +466,44 @@ function renderTuningOptions(options) {
 
       const optionsEl = document.createElement('div');
       optionsEl.className = 'tuning-group-options';
-
-      values
-        .slice()
-        .sort((a, b) => a.localeCompare(b, 'hu', { numeric: true, sensitivity: 'base' }))
-        .forEach(value => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'modern-tuning-option';
-          button.textContent = escapeHtml(value);
-          button.dataset.group = groupName;
-          button.dataset.value = value;
-          button.onclick = () => toggleTuningOption(button);
-          optionsEl.appendChild(button);
-        });
+      renderButtons(groupName, values, optionsEl);
 
       groupEl.appendChild(optionsEl);
       fragment.appendChild(groupEl);
     });
+
+    if (compactGroups.length > 0) {
+      const compactWrapper = document.createElement('div');
+      compactWrapper.className = 'tuning-group tuning-group-compact';
+
+      const compactTitle = document.createElement('div');
+      compactTitle.className = 'tuning-group-title';
+      compactTitle.textContent = 'Egyéb opciók';
+      compactWrapper.appendChild(compactTitle);
+
+      const compactMulti = document.createElement('div');
+      compactMulti.className = 'tuning-group-multi';
+      compactWrapper.appendChild(compactMulti);
+
+      compactGroups.forEach(([groupName, values]) => {
+        const subGroup = document.createElement('div');
+        subGroup.className = 'tuning-subgroup';
+
+        const subTitle = document.createElement('div');
+        subTitle.className = 'tuning-subgroup-title';
+        subTitle.textContent = groupName;
+        subGroup.appendChild(subTitle);
+
+        const optionsEl = document.createElement('div');
+        optionsEl.className = 'tuning-group-options tuning-subgroup-options';
+        renderButtons(groupName, values, optionsEl);
+
+        subGroup.appendChild(optionsEl);
+        compactMulti.appendChild(subGroup);
+      });
+
+      fragment.appendChild(compactWrapper);
+    }
 
     container.appendChild(fragment);
   } catch (error) {
