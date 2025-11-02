@@ -2,6 +2,126 @@
 const currencyFormatterHU = new Intl.NumberFormat('hu-HU');
 let addCarModalEscHandler = null;
 
+function buildCarDisplayData(car, hasTagMap) {
+  const display = {
+    safeModel: escapeHtml(car.Model || ''),
+    safeTuning: escapeHtml(car.Tuning || '-'),
+    vetelAr: car.VetelArFormatted ? `${car.VetelArFormatted} $` : '-',
+    kivantAr: car.KivantArFormatted ? `${car.KivantArFormatted} $` : '-',
+    eladasiAr: car.EladasiArFormatted ? `${car.EladasiArFormatted} $` : '-',
+    keszpenzAr: '-',
+    sellerNameHtml: '<span class="car-card-meta-value">-</span>',
+    sellerPhoneHtml: '<span class="car-card-meta-subtle">nincs adat</span>',
+    sellerNameDisplay: '-',
+    sellerPhoneDisplay: 'nincs adat',
+    imageUrl: '',
+    hasImage: false
+  };
+
+  if (car.EladasiAr && !isNaN(car.EladasiAr)) {
+    const keszpenzErtek = Math.round(car.EladasiAr * 0.925);
+    display.keszpenzAr = `${currencyFormatterHU.format(keszpenzErtek)} $`;
+  }
+
+  let imageUrl = '';
+  if (car.KepURL && car.KepURL.trim() !== '') {
+    imageUrl = car.KepURL;
+  } else if (car.image_data_url && car.image_data_url.trim() !== '') {
+    imageUrl = car.image_data_url;
+  }
+
+  if (imageUrl) {
+    display.imageUrl = imageUrl;
+    display.hasImage = true;
+  }
+
+  if (car.Hozzáadta) {
+    const sellerName = escapeHtml(car.Hozzáadta);
+    let telefonszam = '';
+
+    if (hasTagMap) {
+      const eladoTag = tagOptionMap.get(car.Hozzáadta) || null;
+      telefonszam = eladoTag && eladoTag.phone ? escapeHtml(eladoTag.phone) : '';
+    } else if (Array.isArray(tagOptions) && tagOptions.length > 0) {
+      const fallbackTag = tagOptions.find(tag => tag.name === car.Hozzáadta);
+      telefonszam = fallbackTag && fallbackTag.phone ? escapeHtml(fallbackTag.phone) : '';
+    }
+
+    display.sellerNameHtml = `<span class="car-card-meta-value">${sellerName}</span>`;
+    display.sellerNameDisplay = sellerName;
+
+    if (telefonszam) {
+      display.sellerPhoneHtml = `<span class="car-card-meta-phone">📞 ${telefonszam}</span>`;
+      display.sellerPhoneDisplay = telefonszam;
+    }
+  }
+
+  return display;
+}
+
+function createCarCardElement(car, display, showActions, canDelete) {
+  const card = document.createElement('article');
+  card.className = 'car-card';
+
+  const imageSection = display.hasImage
+    ? `<button class="car-card-image-button" type="button" onclick="showImageModal('${display.imageUrl.replace(/'/g, "\\'")}')">
+         <img src="${display.imageUrl}" alt="${display.safeModel}" class="car-card-image">
+       </button>`
+    : `<div class="car-card-image car-card-image--empty">
+         <span>👁️</span>
+         <small>Nincs kép</small>
+       </div>`;
+
+  const actionSection = showActions
+    ? `<div class="car-card-actions">
+         <button class="modern-btn-sold" onclick="openSoldModal(${car.id})">Eladva</button>
+         ${canDelete ? `<button class="modern-btn-delete" onclick="deleteCar(${car.id})">❌ Törlés</button>` : ''}
+       </div>`
+    : '';
+
+  card.innerHTML = `
+    <div class="car-card-status">💰 ELADÓ</div>
+    <div class="car-card-visual">${imageSection}</div>
+    <div class="car-card-content">
+      <header class="car-card-header">
+        <h4 class="car-card-title">${display.safeModel}</h4>
+        <p class="car-card-subtitle">${display.safeTuning}</p>
+      </header>
+      <section class="car-card-prices">
+        <div class="car-card-price car-card-price-sale">
+          <span class="car-card-price-label">Eladási ár</span>
+          <span class="car-card-price-value">${display.eladasiAr}</span>
+        </div>
+        <div class="car-card-price car-card-price-public car-card-price-keszpenz">
+          <span class="car-card-price-label">Készpénzes ár</span>
+          <span class="car-card-price-value">${display.keszpenzAr}</span>
+        </div>
+        <div class="car-card-price car-card-price-private">
+          <span class="car-card-price-label">Vételár</span>
+          <span class="car-card-price-value">${display.vetelAr}</span>
+        </div>
+        <div class="car-card-price car-card-price-private">
+          <span class="car-card-price-label">Kívánt minimum ár</span>
+          <span class="car-card-price-value">${display.kivantAr}</span>
+        </div>
+      </section>
+      <section class="car-card-meta">
+        <div class="car-card-meta-row">
+          <span class="car-card-meta-label">Eladó</span>
+          ${display.sellerNameHtml}
+        </div>
+        <div class="car-card-meta-row">
+          <span class="car-card-meta-label">Kapcsolat</span>
+          ${display.sellerPhoneHtml}
+        </div>
+      </section>
+    </div>
+    ${actionSection}
+  `;
+
+  return card;
+}
+
 function openAddCarModal() {
   try {
     if (!currentUser) {
@@ -169,113 +289,66 @@ function renderCars(cars) {
       return;
     }
 
-    const fragment = document.createDocumentFragment();
+    const showActions = Boolean(currentUser);
     const hasTagMap = typeof tagOptionMap !== 'undefined' && tagOptionMap instanceof Map && tagOptionMap.size > 0;
+    const countByModel = new Map();
 
-    cars.forEach(c => {
-      const card = document.createElement('article');
-      card.className = 'car-card';
-
-      let imageUrl = '';
-      if (c.KepURL && c.KepURL.trim() !== '') {
-        imageUrl = c.KepURL;
-      } else if (c.image_data_url && c.image_data_url.trim() !== '') {
-        imageUrl = c.image_data_url;
+    cars.forEach(car => {
+      const key = (car.Model || '').trim().toLowerCase();
+      if (!key) {
+        return;
       }
-
-      const safeModel = escapeHtml(c.Model || '');
-      const safeTuning = escapeHtml(c.Tuning || '-');
-
-      const vetelAr = c.VetelArFormatted ? `${c.VetelArFormatted} $` : '-';
-      const kivantAr = c.KivantArFormatted ? `${c.KivantArFormatted} $` : '-';
-      const eladasiAr = c.EladasiArFormatted ? `${c.EladasiArFormatted} $` : '-';
-
-      let keszpenzAr = '-';
-      if (c.EladasiAr && !isNaN(c.EladasiAr)) {
-        const keszpenzErtek = Math.round(c.EladasiAr * 0.925);
-        keszpenzAr = `${currencyFormatterHU.format(keszpenzErtek)} $`;
-      }
-
-      let sellerNameHtml = '<span class="car-card-meta-value">-</span>';
-      let sellerPhoneHtml = '<span class="car-card-meta-subtle">nincs adat</span>';
-      if (c.Hozzáadta) {
-        const sellerName = escapeHtml(c.Hozzáadta);
-        let telefonszam = '';
-
-        if (hasTagMap) {
-          const eladoTag = tagOptionMap.get(c.Hozzáadta) || null;
-          telefonszam = eladoTag && eladoTag.phone ? escapeHtml(eladoTag.phone) : '';
-        } else if (Array.isArray(tagOptions) && tagOptions.length > 0) {
-          const fallbackTag = tagOptions.find(tag => tag.name === c.Hozzáadta);
-          telefonszam = fallbackTag && fallbackTag.phone ? escapeHtml(fallbackTag.phone) : '';
-        }
-
-        sellerNameHtml = `<span class="car-card-meta-value">${sellerName}</span>`;
-        sellerPhoneHtml = telefonszam
-          ? `<span class="car-card-meta-phone">📞 ${telefonszam}</span>`
-          : '<span class="car-card-meta-subtle">nincs telefonszám</span>';
-      }
-
-      const canDelete = currentUser && (c.Hozzáadta === currentUser.tagName || currentUser.role === 'admin');
-
-      const imageSection = imageUrl && !imageUrl.includes('undefined')
-        ? `<button class="car-card-image-button" type="button" onclick="showImageModal('${imageUrl.replace(/'/g, "\\'")}')">
-             <img src="${imageUrl}" alt="${safeModel}" class="car-card-image">
-           </button>`
-        : `<div class="car-card-image car-card-image--empty">
-             <span>👁️</span>
-             <small>Nincs kép</small>
-           </div>`;
-
-      const actionSection = currentUser
-        ? `<div class="car-card-actions">
-             <button class="modern-btn-sold" onclick="openSoldModal(${c.id})">Eladva</button>
-             ${canDelete ? `<button class="modern-btn-delete" onclick="deleteCar(${c.id})">❌ Törlés</button>` : ''}
-           </div>`
-        : '';
-
-      card.innerHTML = `
-        <div class="car-card-status">💰 ELADÓ</div>
-        <div class="car-card-visual">${imageSection}</div>
-        <div class="car-card-content">
-          <header class="car-card-header">
-            <h4 class="car-card-title">${safeModel}</h4>
-            <p class="car-card-subtitle">${safeTuning}</p>
-          </header>
-          <section class="car-card-prices">
-            <div class="car-card-price car-card-price-sale">
-              <span class="car-card-price-label">Eladási ár</span>
-              <span class="car-card-price-value">${eladasiAr}</span>
-            </div>
-            <div class="car-card-price car-card-price-public car-card-price-keszpenz">
-              <span class="car-card-price-label">Készpénzes ár</span>
-              <span class="car-card-price-value">${keszpenzAr}</span>
-            </div>
-            <div class="car-card-price car-card-price-private">
-              <span class="car-card-price-label">Vételár</span>
-              <span class="car-card-price-value">${vetelAr}</span>
-            </div>
-            <div class="car-card-price car-card-price-private">
-              <span class="car-card-price-label">Kívánt minimum ár</span>
-              <span class="car-card-price-value">${kivantAr}</span>
-            </div>
-          </section>
-          <section class="car-card-meta">
-            <div class="car-card-meta-row">
-              <span class="car-card-meta-label">Eladó</span>
-              ${sellerNameHtml}
-            </div>
-            <div class="car-card-meta-row">
-              <span class="car-card-meta-label">Kapcsolat</span>
-              ${sellerPhoneHtml}
-            </div>
-          </section>
-        </div>
-        ${actionSection}
-      `;
-
-      fragment.appendChild(card);
+      countByModel.set(key, (countByModel.get(key) || 0) + 1);
     });
+
+    const multipleEntries = [];
+    const singleEntries = [];
+
+    cars.forEach(car => {
+      const display = buildCarDisplayData(car, hasTagMap);
+      const key = (car.Model || '').trim().toLowerCase();
+      const entry = {
+        car,
+        display,
+        canDelete: showActions && (car.Hozzáadta === currentUser?.tagName || currentUser?.role === 'admin')
+      };
+
+      if (key && (countByModel.get(key) || 0) > 1) {
+        multipleEntries.push(entry);
+      } else {
+        singleEntries.push(entry);
+      }
+    });
+
+    const fragment = document.createDocumentFragment();
+
+    if (multipleEntries.length > 0) {
+      const multiStrip = document.createElement('div');
+      multiStrip.className = 'car-card-strip car-card-strip-primary';
+      multipleEntries.forEach(({ car, display, canDelete }) => {
+        multiStrip.appendChild(createCarCardElement(car, display, showActions, canDelete));
+      });
+      fragment.appendChild(multiStrip);
+    }
+
+    if (singleEntries.length > 0) {
+      const miscSection = document.createElement('section');
+      miscSection.className = 'car-card-section car-card-section-misc';
+
+      const heading = document.createElement('div');
+      heading.className = 'car-card-section-title';
+      heading.textContent = 'Egyéb';
+      miscSection.appendChild(heading);
+
+      const miscStrip = document.createElement('div');
+      miscStrip.className = 'car-card-strip car-card-strip-misc';
+      singleEntries.forEach(({ car, display, canDelete }) => {
+        miscStrip.appendChild(createCarCardElement(car, display, showActions, canDelete));
+      });
+      miscSection.appendChild(miscStrip);
+
+      fragment.appendChild(miscSection);
+    }
 
     grid.innerHTML = '';
     grid.appendChild(fragment);

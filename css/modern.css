@@ -1139,6 +1139,12 @@ select:focus {
 
 .car-card-grid {
   display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.car-card-strip {
+  display: flex;
   gap: 24px;
   overflow-x: auto;
   padding: 6px 6px 18px;
@@ -1147,21 +1153,21 @@ select:focus {
   -webkit-overflow-scrolling: touch;
 }
 
-.car-card-grid::after {
+.car-card-strip::after {
   content: '';
   flex: 0 0 6px;
 }
 
-.car-card-grid::-webkit-scrollbar {
+.car-card-strip::-webkit-scrollbar {
   height: 8px;
 }
 
-.car-card-grid::-webkit-scrollbar-track {
+.car-card-strip::-webkit-scrollbar-track {
   background: rgba(15, 23, 42, 0.06);
   border-radius: 999px;
 }
 
-.car-card-grid::-webkit-scrollbar-thumb {
+.car-card-strip::-webkit-scrollbar-thumb {
   background: rgba(37, 99, 235, 0.35);
   border-radius: 999px;
 }
@@ -1178,8 +1184,29 @@ select:focus {
   box-shadow: 0 28px 55px rgba(15, 23, 42, 0.12);
   overflow: hidden;
   min-height: 100%;
-  flex: 0 0 320px;
+  flex: 0 0 360px;
   scroll-snap-align: center;
+}
+
+.car-card-strip-misc .car-card {
+  flex-basis: 340px;
+}
+
+.car-card-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.car-card-section-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ui-heading);
+  padding-left: 12px;
+}
+
+.car-card-strip-misc {
+  padding-bottom: 12px;
 }
 
 .car-card::before {
