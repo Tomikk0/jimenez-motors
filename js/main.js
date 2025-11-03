@@ -335,7 +335,7 @@ async function loadCachedBootstrapData() {
       return null;
     }
 
-    await rehydrateBootstrapImages(data);
+    queueBootstrapImageRehydration(data);
 
     return data;
   } catch (error) {
@@ -621,7 +621,7 @@ async function persistBootstrapImages(entries, referencedKeys) {
 
 async function rehydrateBootstrapImages(data) {
   if (!data || typeof data !== 'object' || !Array.isArray(data.cars)) {
-    return;
+    return false;
   }
 
   const carsNeedingImages = data.cars
@@ -652,13 +652,15 @@ async function rehydrateBootstrapImages(data) {
     .filter(Boolean);
 
   if (carsNeedingImages.length === 0) {
-    return;
+    return false;
   }
 
   const db = await openBootstrapImageDb();
   if (!db) {
-    return;
+    return false;
   }
+
+  let updated = false;
 
   await new Promise(resolve => {
     const tx = db.transaction(BOOTSTRAP_IMAGE_OBJECT_STORE, 'readonly');
@@ -673,6 +675,7 @@ async function rehydrateBootstrapImages(data) {
             car.image_data_url = record.dataUrl;
             car.hasImageDataUrl = true;
             car.imageCacheKey = cacheKey;
+            updated = true;
           }
         };
         request.onerror = () => {
@@ -689,6 +692,59 @@ async function rehydrateBootstrapImages(data) {
       resolve();
     };
   });
+
+  return updated;
+}
+
+function refreshCarsFromBootstrap(cars) {
+  if (!Array.isArray(cars)) {
+    return;
+  }
+
+  try {
+    if (typeof setCars === 'function') {
+      setCars(cars);
+      return;
+    }
+
+    const prepared = typeof transformCarRow === 'function'
+      ? cars.map(transformCarRow).filter(Boolean)
+      : cars.slice();
+
+    allCars = prepared;
+    carsLoaded = true;
+
+    if (typeof renderCars === 'function') {
+      renderCars(allCars);
+    }
+  } catch (error) {
+    console.warn('⚠️ Bootstrap autó lista frissítés hiba:', error);
+  }
+}
+
+function queueBootstrapImageRehydration(data) {
+  if (!data || typeof data !== 'object') {
+    return;
+  }
+
+  try {
+    const promise = rehydrateBootstrapImages(data);
+    if (!promise || typeof promise.then !== 'function') {
+      return;
+    }
+
+    promise
+      .then(updated => {
+        if (updated) {
+          refreshCarsFromBootstrap(data.cars);
+        }
+      })
+      .catch(error => {
+        console.warn('⚠️ Bootstrap kép rehidrálási hiba:', error);
+      });
+  } catch (error) {
+    console.warn('⚠️ Bootstrap kép rehidrálás ütemezési hiba:', error);
+  }
 }
 
 function clearCachedBootstrapData() {
