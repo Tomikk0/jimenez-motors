@@ -7,8 +7,32 @@ require_once __DIR__ . '/Database.php';
 function send_json(array $payload, int $status = 200): void
 {
     http_response_code($status);
-    header('Content-Type: application/json');
-    echo json_encode($payload);
+    header('Content-Type: application/json; charset=utf-8');
+
+    $invalidUtf8Mask = defined('JSON_INVALID_UTF8_SUBSTITUTE') ? JSON_INVALID_UTF8_SUBSTITUTE : 0;
+    $options = JSON_UNESCAPED_UNICODE | $invalidUtf8Mask;
+
+    $json = json_encode($payload, $options);
+
+    if ($json === false) {
+        $fallback = [
+            'error' => [
+                'message' => 'JSON encoding failed',
+                'context' => [
+                    'json_error' => function_exists('json_last_error_msg') ? json_last_error_msg() : json_last_error(),
+                ],
+            ],
+        ];
+
+        http_response_code(500);
+        $json = json_encode($fallback, JSON_UNESCAPED_UNICODE);
+
+        if ($json === false) {
+            $json = '{"error":{"message":"JSON encoding failed"}}';
+        }
+    }
+
+    echo $json;
     exit;
 }
 

@@ -88,7 +88,12 @@ function cache_set(string $key, array $payload): void
         }
     }
 
-    $json = json_encode($payload);
+    $options = JSON_UNESCAPED_UNICODE;
+    if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
+        $options |= JSON_INVALID_UTF8_SUBSTITUTE;
+    }
+
+    $json = json_encode($payload, $options);
 
     if ($json === false) {
         return;
