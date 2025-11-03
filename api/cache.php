@@ -23,15 +23,33 @@ function cache_get(string $key, int $ttlSeconds)
         return null;
     }
 
-    $path = cache_path($key);
+    $entry = cache_get_with_timestamp($key);
 
-    if (!is_file($path) || !is_readable($path)) {
+    if ($entry === null) {
         return null;
     }
 
-    $modifiedAt = filemtime($path);
+    $timestamp = $entry['timestamp'] ?? null;
 
-    if ($modifiedAt === false || (time() - $modifiedAt) > $ttlSeconds) {
+    if ($timestamp === null) {
+        return null;
+    }
+
+    if ((time() - $timestamp) > $ttlSeconds) {
+        return null;
+    }
+
+    return $entry['data'] ?? null;
+}
+
+/**
+ * Return the cache payload along with its last modified timestamp.
+ */
+function cache_get_with_timestamp(string $key): ?array
+{
+    $path = cache_path($key);
+
+    if (!is_file($path) || !is_readable($path)) {
         return null;
     }
 
@@ -43,7 +61,16 @@ function cache_get(string $key, int $ttlSeconds)
 
     $decoded = json_decode($contents, true);
 
-    return is_array($decoded) ? $decoded : null;
+    if (!is_array($decoded)) {
+        return null;
+    }
+
+    $modifiedAt = filemtime($path);
+
+    return [
+        'data' => $decoded,
+        'timestamp' => $modifiedAt === false ? null : (int) $modifiedAt,
+    ];
 }
 
 /**

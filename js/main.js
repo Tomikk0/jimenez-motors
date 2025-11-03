@@ -227,7 +227,12 @@ function loadCurrentPage() {
 // === ADATBETÖLTÉS ===
 const BOOTSTRAP_TIMEOUT_MS = 2000;
 const LOCAL_BOOTSTRAP_CACHE_KEY = 'jimenezMotors_bootstrapCache';
-const LOCAL_BOOTSTRAP_CACHE_TTL_MS = 60 * 1000;
+const LOCAL_BOOTSTRAP_CACHE_TTL_MS = 5 * 60 * 1000;
+const MAX_BOOTSTRAP_REFETCH_ATTEMPTS = 3;
+const BOOTSTRAP_REFETCH_BASE_DELAY_MS = 500;
+
+let bootstrapRefetchAttempts = 0;
+let bootstrapRefetchTimer = null;
 
 function loadCachedBootstrapData() {
   try {
@@ -278,6 +283,88 @@ function clearCachedBootstrapData() {
   }
 }
 
+function resetBootstrapRefetchState() {
+  bootstrapRefetchAttempts = 0;
+  if (bootstrapRefetchTimer) {
+    clearTimeout(bootstrapRefetchTimer);
+    bootstrapRefetchTimer = null;
+  }
+}
+
+function scheduleBootstrapRefetch() {
+  if (bootstrapRefetchAttempts >= MAX_BOOTSTRAP_REFETCH_ATTEMPTS) {
+    return;
+  }
+
+  if (bootstrapRefetchTimer) {
+    return;
+  }
+
+  const delay = Math.pow(2, bootstrapRefetchAttempts) * BOOTSTRAP_REFETCH_BASE_DELAY_MS;
+
+  bootstrapRefetchTimer = setTimeout(async () => {
+    bootstrapRefetchTimer = null;
+    bootstrapRefetchAttempts += 1;
+
+    try {
+      const result = await fetchBootstrapData();
+
+      if (processBootstrapResult(result)) {
+        return;
+      }
+
+      if (bootstrapRefetchAttempts < MAX_BOOTSTRAP_REFETCH_ATTEMPTS) {
+        scheduleBootstrapRefetch();
+      }
+    } catch (error) {
+      console.warn('⚠️ Bootstrap refetch attempt failed:', error);
+      if (bootstrapRefetchAttempts < MAX_BOOTSTRAP_REFETCH_ATTEMPTS) {
+        scheduleBootstrapRefetch();
+      }
+    }
+  }, delay);
+}
+
+function handleBootstrapRefetch(cacheStatus) {
+  if (!cacheStatus) {
+    resetBootstrapRefetchState();
+    return;
+  }
+
+  const normalized = cacheStatus.toLowerCase();
+
+  if (normalized === 'hit' || normalized === 'miss') {
+    resetBootstrapRefetchState();
+    return;
+  }
+
+  if (normalized === 'stale' || normalized === 'stale-error') {
+    scheduleBootstrapRefetch();
+    return;
+  }
+
+  resetBootstrapRefetchState();
+}
+
+function processBootstrapResult(result, { persist = true } = {}) {
+  if (!result || !result.data) {
+    return false;
+  }
+
+  const applied = applyBootstrapData(result.data);
+
+  if (!applied) {
+    return false;
+  }
+
+  if (persist) {
+    saveCachedBootstrapData(result.data);
+  }
+
+  handleBootstrapRefetch(result.cacheStatus);
+  return true;
+}
+
 async function fetchBootstrapData() {
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timeoutId = controller
@@ -305,7 +392,13 @@ async function fetchBootstrapData() {
       throw new Error(errorMessage);
     }
 
-    return payload.data;
+    const cacheHeader = response.headers ? response.headers.get('X-Bootstrap-Cache') : null;
+    const cacheStatus = cacheHeader ? cacheHeader.toLowerCase() : null;
+
+    return {
+      data: payload.data,
+      cacheStatus
+    };
   } catch (error) {
     const abortErrorCode = typeof DOMException !== 'undefined' ? DOMException.ABORT_ERR : 20;
     const isAbortError = error && (error.name === 'AbortError' || error.code === abortErrorCode);
@@ -381,6 +474,8 @@ async function loadAllData() {
   try {
     console.log('🔄 Összes adat betöltése...');
 
+    resetBootstrapRefetchState();
+
     const cachedBootstrap = loadCachedBootstrapData();
     let appliedCachedData = false;
 
@@ -395,9 +490,9 @@ async function loadAllData() {
 
     if (appliedCachedData) {
       bootstrapPromise
-        .then(freshData => {
-          if (freshData && applyBootstrapData(freshData)) {
-            saveCachedBootstrapData(freshData);
+        .then(result => {
+          if (!processBootstrapResult(result)) {
+            console.warn('⚠️ Bootstrap frissítés nem alkalmazható, marad a gyorsítótár');
           }
         })
         .catch(error => {
@@ -408,11 +503,9 @@ async function loadAllData() {
       return;
     }
 
-    const bootstrapData = await bootstrapPromise;
+    const bootstrapResult = await bootstrapPromise;
 
-    if (bootstrapData && applyBootstrapData(bootstrapData)) {
-      saveCachedBootstrapData(bootstrapData);
-    } else {
+    if (!processBootstrapResult(bootstrapResult)) {
       clearCachedBootstrapData();
       await Promise.all([
         loadTuningOptions(),
