@@ -69,3 +69,18 @@ function fetch_bootstrap_payload(): array
         }, is_array($newsRows) ? $newsRows : []),
     ];
 }
+
+/**
+ * Provide a deterministic empty payload so the client can still render while
+ * the database is unavailable.
+ */
+function empty_bootstrap_payload(): array
+{
+    return [
+        'cars' => [],
+        'members' => [],
+        'tuningOptions' => [],
+        'modelOptions' => [],
+        'news' => [],
+    ];
+}

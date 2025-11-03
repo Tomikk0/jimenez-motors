@@ -11,19 +11,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
 }
 
 $cachedEntry = cache_get_with_timestamp(BOOTSTRAP_CACHE_KEY);
+$cachedData = null;
+$cachedAge = null;
+
+if (is_array($cachedEntry)) {
+    $timestamp = $cachedEntry['timestamp'] ?? null;
+    $cachedData = $cachedEntry['data'] ?? null;
+    $cachedAge = $timestamp ? time() - $timestamp : null;
+}
 
 try {
-    if (is_array($cachedEntry)) {
-        $timestamp = $cachedEntry['timestamp'] ?? null;
-        $cachedData = $cachedEntry['data'] ?? null;
-        $age = $timestamp ? time() - $timestamp : null;
-
-        if ($cachedData !== null && $age !== null && $age <= BOOTSTRAP_CACHE_TTL_SECONDS) {
+    if (is_array($cachedData)) {
+        if ($cachedAge !== null && $cachedAge <= BOOTSTRAP_CACHE_TTL_SECONDS) {
             header('X-Bootstrap-Cache: hit');
             send_json(['data' => $cachedData]);
         }
 
-        if ($cachedData !== null && ($age === null || $age <= BOOTSTRAP_CACHE_TTL_SECONDS + BOOTSTRAP_CACHE_STALE_GRACE_SECONDS)) {
+        if ($cachedAge === null || $cachedAge <= BOOTSTRAP_CACHE_TTL_SECONDS + BOOTSTRAP_CACHE_STALE_GRACE_SECONDS) {
             header('X-Bootstrap-Cache: stale');
             refresh_bootstrap_cache_in_background();
             send_json(['data' => $cachedData]);
@@ -35,14 +39,44 @@ try {
 
     header('X-Bootstrap-Cache: miss');
     send_json(['data' => $payload]);
-} catch (PDOException $exception) {
-    if (is_array($cachedEntry) && isset($cachedEntry['data']) && is_array($cachedEntry['data'])) {
+} catch (\Throwable $exception) {
+    if (is_array($cachedData)) {
         header('X-Bootstrap-Cache: stale-error');
         refresh_bootstrap_cache_in_background();
-        send_json(['data' => $cachedEntry['data']]);
+        send_json([
+            'data' => $cachedData,
+            'meta' => [
+                'cacheStatus' => 'stale-error',
+                'message' => 'A bootstrap adatok frissítése nem sikerült, gyorsítótárból szolgálva.',
+            ],
+        ]);
     }
 
-    send_error('Database error', 500, ['message' => $exception->getMessage()]);
+    $isDatabaseError = $exception instanceof \PDOException;
+    $meta = [
+        'cacheStatus' => 'empty-fallback',
+        'message' => 'A bootstrap adatok nem érhetők el, ideiglenes üres készlet szolgálva.',
+    ];
+
+    if ($isDatabaseError) {
+        $meta['reason'] = 'database-error';
+    } else {
+        $meta['reason'] = 'internal-error';
+    }
+
+    error_log(sprintf(
+        '[bootstrap] %s: %s in %s on line %d',
+        get_class($exception),
+        $exception->getMessage(),
+        $exception->getFile(),
+        $exception->getLine()
+    ));
+
+    header('X-Bootstrap-Cache: empty-fallback');
+    send_json([
+        'data' => empty_bootstrap_payload(),
+        'meta' => $meta,
+    ]);
 }
 
 function refresh_bootstrap_cache_in_background(): void
