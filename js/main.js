@@ -225,14 +225,26 @@ function loadCurrentPage() {
 }
 
 // === ADATBETÖLTÉS ===
+const BOOTSTRAP_TIMEOUT_MS = 2000;
+
 async function fetchBootstrapData() {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller
+    ? setTimeout(() => {
+        if (!controller.signal.aborted) {
+          controller.abort();
+        }
+      }, BOOTSTRAP_TIMEOUT_MS)
+    : null;
+
   try {
     const response = await fetch(`${API_BASE_URL}/bootstrap.php`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json'
       },
-      cache: 'no-store'
+      cache: 'no-store',
+      signal: controller ? controller.signal : undefined
     });
 
     const payload = await response.json();
@@ -244,8 +256,20 @@ async function fetchBootstrapData() {
 
     return payload.data;
   } catch (error) {
-    console.warn('⚠️ Bootstrap betöltés sikertelen, visszatérés az egyedi lekérésekre', error);
+    const abortErrorCode = typeof DOMException !== 'undefined' ? DOMException.ABORT_ERR : 20;
+    const isAbortError = error && (error.name === 'AbortError' || error.code === abortErrorCode);
+
+    if (isAbortError) {
+      console.warn(`⏳ Bootstrap betöltés megszakítva ${BOOTSTRAP_TIMEOUT_MS} ms után, átváltás egyedi lekérésekre`);
+    } else {
+      console.warn('⚠️ Bootstrap betöltés sikertelen, visszatérés az egyedi lekérésekre', error);
+    }
+
     return null;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
