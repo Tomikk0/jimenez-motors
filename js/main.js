@@ -228,6 +228,56 @@ function loadCurrentPage() {
 const BOOTSTRAP_TIMEOUT_MS = 2000;
 const LOCAL_BOOTSTRAP_CACHE_KEY = 'jimenezMotors_bootstrapCache';
 const LOCAL_BOOTSTRAP_CACHE_TTL_MS = 5 * 60 * 1000;
+const LOCAL_BOOTSTRAP_CACHE_MAX_BYTES = 4 * 1024 * 1024; // ~4 MB biztonsági limit
+
+let bootstrapCacheDisabled = false;
+let bootstrapCacheDisableReason = '';
+
+function disableBootstrapCache(reason, error) {
+  if (bootstrapCacheDisabled) {
+    return;
+  }
+
+  bootstrapCacheDisabled = true;
+  bootstrapCacheDisableReason = reason;
+
+  try {
+    localStorage.removeItem(LOCAL_BOOTSTRAP_CACHE_KEY);
+  } catch (storageError) {
+    console.warn('⚠️ Bootstrap cache disable cleanup error:', storageError);
+  }
+
+  if (error) {
+    console.warn(`⚠️ Bootstrap cache letiltva (${reason}):`, error);
+  } else {
+    console.warn(`⚠️ Bootstrap cache letiltva (${reason})`);
+  }
+}
+
+function estimateStringBytes(str) {
+  if (typeof TextEncoder !== 'undefined') {
+    return new TextEncoder().encode(str).length;
+  }
+
+  // Fallback becslés, UTF-16 karakterenként 2 byte-tal számolunk
+  return str.length * 2;
+}
+
+function isQuotaExceededError(error) {
+  if (!error) {
+    return false;
+  }
+
+  if (error.code && error.code === 22) {
+    return true;
+  }
+
+  if (error.name && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+    return true;
+  }
+
+  return false;
+}
 const MAX_BOOTSTRAP_REFETCH_ATTEMPTS = 3;
 const BOOTSTRAP_REFETCH_BASE_DELAY_MS = 500;
 
@@ -235,6 +285,13 @@ let bootstrapRefetchAttempts = 0;
 let bootstrapRefetchTimer = null;
 
 function loadCachedBootstrapData() {
+  if (bootstrapCacheDisabled) {
+    if (bootstrapCacheDisableReason) {
+      console.debug('ℹ️ Bootstrap cache kihagyva:', bootstrapCacheDisableReason);
+    }
+    return null;
+  }
+
   try {
     const raw = localStorage.getItem(LOCAL_BOOTSTRAP_CACHE_KEY);
     if (!raw) {
@@ -263,19 +320,38 @@ function loadCachedBootstrapData() {
 }
 
 function saveCachedBootstrapData(data) {
+  if (bootstrapCacheDisabled) {
+    return;
+  }
+
   try {
     const payload = JSON.stringify({
       timestamp: Date.now(),
       data
     });
 
+    const payloadSize = estimateStringBytes(payload);
+
+    if (payloadSize > LOCAL_BOOTSTRAP_CACHE_MAX_BYTES) {
+      disableBootstrapCache('túl nagy gyorsítótár (payload méret: ' + payloadSize + ' byte)');
+      return;
+    }
+
     localStorage.setItem(LOCAL_BOOTSTRAP_CACHE_KEY, payload);
   } catch (error) {
-    console.warn('⚠️ Bootstrap cache write error:', error);
+    if (isQuotaExceededError(error)) {
+      disableBootstrapCache('kvóta túllépés', error);
+    } else {
+      console.warn('⚠️ Bootstrap cache write error:', error);
+    }
   }
 }
 
 function clearCachedBootstrapData() {
+  if (bootstrapCacheDisabled) {
+    return;
+  }
+
   try {
     localStorage.removeItem(LOCAL_BOOTSTRAP_CACHE_KEY);
   } catch (error) {
