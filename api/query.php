@@ -15,6 +15,7 @@ $type = $payload['type'] ?? 'select';
 $selectColumns = $payload['select'] ?? '*';
 $filters = $payload['filters'] ?? [];
 $order = $payload['order'] ?? null;
+$limit = isset($payload['limit']) ? normalise_limit($payload['limit']) : null;
 $data = $payload['data'] ?? null;
 $returning = (bool) ($payload['returning'] ?? false);
 $single = (bool) ($payload['single'] ?? false);
@@ -30,7 +31,7 @@ $whereClause = build_where_clause(is_array($filters) ? $filters : [], $params);
 try {
     switch ($type) {
         case 'select':
-            send_json(['data' => run_select($pdo, $table, $selectColumns, $whereClause, $params, $order, $single)]);
+            send_json(['data' => run_select($pdo, $table, $selectColumns, $whereClause, $params, $order, $limit, $single)]);
             break;
         case 'insert':
             send_json(['data' => run_insert($pdo, $table, $data, $returning, $selectColumns)]);
@@ -48,7 +49,7 @@ try {
     send_error('Database error', 500, ['message' => $exception->getMessage()]);
 }
 
-function run_select(\PDO $pdo, string $table, string $columns, string $whereClause, array $params, ?array $order, bool $single)
+function run_select(\PDO $pdo, string $table, string $columns, string $whereClause, array $params, ?array $order, ?int $limit, bool $single)
 {
     if ($columns !== '*') {
         $sanitizedColumns = array_map('trim', explode(',', $columns));
@@ -65,7 +66,11 @@ function run_select(\PDO $pdo, string $table, string $columns, string $whereClau
         $sql .= sprintf(' ORDER BY `%s` %s', $orderColumn, $direction);
     }
 
-    if ($single) {
+    if ($limit !== null) {
+        $sql .= ' LIMIT ' . $limit;
+    }
+
+    if ($single && $limit === null) {
         $sql .= ' LIMIT 1';
     }
 
@@ -167,7 +172,7 @@ function run_update(\PDO $pdo, string $table, $data, string $whereClause, array 
     if ($returning) {
         $selectParams = [];
         $where = build_where_clause($filters, $selectParams);
-        return run_select($pdo, $table, $selectColumns, $where, $selectParams, $order, $single);
+        return run_select($pdo, $table, $selectColumns, $where, $selectParams, $order, null, $single);
     }
 
     return $statement->rowCount();
@@ -180,6 +185,20 @@ function run_delete(\PDO $pdo, string $table, string $whereClause, array $params
     $statement->execute($params);
 
     return $statement->rowCount();
+}
+
+function normalise_limit($value): ?int
+{
+    if (is_int($value)) {
+        return $value > 0 ? $value : null;
+    }
+
+    if (is_numeric($value)) {
+        $integer = (int) $value;
+        return $integer > 0 ? $integer : null;
+    }
+
+    return null;
 }
 
 function fetch_rows_by_ids(\PDO $pdo, string $table, array $ids, string $selectColumns)
@@ -199,7 +218,7 @@ function fetch_rows_by_ids(\PDO $pdo, string $table, array $ids, string $selectC
     $inClause = implode(', ', $placeholders);
     $where = ' WHERE `id` IN (' . $inClause . ')';
 
-    return run_select($pdo, $table, $selectColumns, $where, $params, null, false);
+    return run_select($pdo, $table, $selectColumns, $where, $params, null, null, false);
 }
 
 function is_assoc(array $array): bool

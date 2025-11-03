@@ -11,6 +11,7 @@
         select: '*',
         filters: [],
         order: null,
+        limit: null,
         data: null,
         returning: false,
         single: false
@@ -48,6 +49,11 @@
           state.order = { column, ascending: options.ascending !== false };
           return query;
         },
+        limit(count) {
+          const parsed = Number.parseInt(count, 10);
+          state.limit = Number.isNaN(parsed) || parsed <= 0 ? null : parsed;
+          return query;
+        },
         single() {
           state.single = true;
           return query;
@@ -76,6 +82,7 @@
               select: state.select,
               filters: state.filters,
               order: state.order,
+              limit: state.limit,
               data: state.data,
               returning: state.returning,
               single: state.single
