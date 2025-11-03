@@ -92,8 +92,33 @@ function refresh_bootstrap_cache_in_background(): void
     $command = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($script);
 
     if (stripos(PHP_OS, 'WIN') === 0) {
+        if (!is_function_available('popen') || !is_function_available('pclose')) {
+            return;
+        }
+
         @pclose(@popen('start /B ' . $command, 'r'));
     } else {
+        if (!is_function_available('exec')) {
+            return;
+        }
+
         @exec($command . ' > /dev/null 2>&1 &');
     }
+}
+
+function is_function_available(string $name): bool
+{
+    if (!function_exists($name)) {
+        return false;
+    }
+
+    $disabled = ini_get('disable_functions');
+
+    if (!is_string($disabled) || trim($disabled) === '') {
+        return true;
+    }
+
+    $list = array_map('trim', explode(',', $disabled));
+
+    return !in_array($name, $list, true);
 }
