@@ -229,6 +229,7 @@ const BOOTSTRAP_TIMEOUT_MS = 2000;
 const LOCAL_BOOTSTRAP_CACHE_KEY = 'jimenezMotors_bootstrapCache';
 const LOCAL_BOOTSTRAP_CACHE_TTL_MS = 5 * 60 * 1000;
 const LOCAL_BOOTSTRAP_CACHE_MAX_BYTES = 4 * 1024 * 1024; // ~4 MB biztonsági limit
+const LOCAL_BOOTSTRAP_CACHE_IMAGE_DATA_LIMIT = 0; // image_data_url mezők kihagyása a gyorsítótárból
 
 let bootstrapCacheDisabled = false;
 let bootstrapCacheDisableReason = '';
@@ -319,15 +320,57 @@ function loadCachedBootstrapData() {
   }
 }
 
+function createCacheSafeBootstrapSnapshot(data) {
+  if (!data || typeof data !== 'object') {
+    return null;
+  }
+
+  const snapshot = {
+    ...data,
+  };
+
+  if (Array.isArray(data.cars)) {
+    snapshot.cars = data.cars.map(car => {
+      if (!car || typeof car !== 'object') {
+        return car;
+      }
+
+      const sanitized = { ...car };
+
+      if (typeof sanitized.image_data_url === 'string') {
+        const imageLength = sanitized.image_data_url.length;
+
+        if (
+          LOCAL_BOOTSTRAP_CACHE_IMAGE_DATA_LIMIT === 0 ||
+          imageLength > LOCAL_BOOTSTRAP_CACHE_IMAGE_DATA_LIMIT
+        ) {
+          sanitized.hasImageDataUrl = sanitized.image_data_url.trim().length > 0;
+          delete sanitized.image_data_url;
+        }
+      }
+
+      return sanitized;
+    });
+  }
+
+  return snapshot;
+}
+
 function saveCachedBootstrapData(data) {
   if (bootstrapCacheDisabled) {
     return;
   }
 
   try {
+    const cacheSafeData = createCacheSafeBootstrapSnapshot(data);
+
+    if (!cacheSafeData) {
+      return;
+    }
+
     const payload = JSON.stringify({
       timestamp: Date.now(),
-      data
+      data: cacheSafeData
     });
 
     const payloadSize = estimateStringBytes(payload);
