@@ -226,6 +226,57 @@ function loadCurrentPage() {
 
 // === ADATBETÖLTÉS ===
 const BOOTSTRAP_TIMEOUT_MS = 2000;
+const LOCAL_BOOTSTRAP_CACHE_KEY = 'jimenezMotors_bootstrapCache';
+const LOCAL_BOOTSTRAP_CACHE_TTL_MS = 60 * 1000;
+
+function loadCachedBootstrapData() {
+  try {
+    const raw = localStorage.getItem(LOCAL_BOOTSTRAP_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    const { timestamp, data } = parsed;
+    if (typeof timestamp !== 'number' || !data) {
+      return null;
+    }
+
+    if (Date.now() - timestamp > LOCAL_BOOTSTRAP_CACHE_TTL_MS) {
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.warn('⚠️ Bootstrap cache read error:', error);
+    return null;
+  }
+}
+
+function saveCachedBootstrapData(data) {
+  try {
+    const payload = JSON.stringify({
+      timestamp: Date.now(),
+      data
+    });
+
+    localStorage.setItem(LOCAL_BOOTSTRAP_CACHE_KEY, payload);
+  } catch (error) {
+    console.warn('⚠️ Bootstrap cache write error:', error);
+  }
+}
+
+function clearCachedBootstrapData() {
+  try {
+    localStorage.removeItem(LOCAL_BOOTSTRAP_CACHE_KEY);
+  } catch (error) {
+    console.warn('⚠️ Bootstrap cache clear error:', error);
+  }
+}
 
 async function fetchBootstrapData() {
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -330,11 +381,39 @@ async function loadAllData() {
   try {
     console.log('🔄 Összes adat betöltése...');
 
-    const bootstrapData = await fetchBootstrapData();
+    const cachedBootstrap = loadCachedBootstrapData();
+    let appliedCachedData = false;
 
-    if (bootstrapData) {
-      applyBootstrapData(bootstrapData);
+    if (cachedBootstrap) {
+      appliedCachedData = applyBootstrapData(cachedBootstrap);
+      if (appliedCachedData) {
+        console.log('⚡️ Bootstrap adatok helyi gyorsítótárból betöltve');
+      }
+    }
+
+    const bootstrapPromise = fetchBootstrapData();
+
+    if (appliedCachedData) {
+      bootstrapPromise
+        .then(freshData => {
+          if (freshData && applyBootstrapData(freshData)) {
+            saveCachedBootstrapData(freshData);
+          }
+        })
+        .catch(error => {
+          console.warn('⚠️ Bootstrap frissítés sikertelen:', error);
+        });
+
+      console.log('✅ Összes adat sikeresen betöltve (helyi gyorsítótár)');
+      return;
+    }
+
+    const bootstrapData = await bootstrapPromise;
+
+    if (bootstrapData && applyBootstrapData(bootstrapData)) {
+      saveCachedBootstrapData(bootstrapData);
     } else {
+      clearCachedBootstrapData();
       await Promise.all([
         loadTuningOptions(),
         loadModelOptions(),

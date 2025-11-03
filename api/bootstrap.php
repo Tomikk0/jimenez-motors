@@ -6,7 +6,7 @@ require_once __DIR__ . '/common.php';
 require_once __DIR__ . '/cache.php';
 
 const BOOTSTRAP_CACHE_KEY = 'bootstrap';
-const BOOTSTRAP_CACHE_TTL_SECONDS = 15;
+const BOOTSTRAP_CACHE_TTL_SECONDS = 60;
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
     send_error('Method not allowed', 405);
