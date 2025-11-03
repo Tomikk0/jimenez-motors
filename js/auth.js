@@ -147,7 +147,14 @@ function updateUIForLoginState() {
   console.log('✅ UI frissítve, logged-in:', isLoggedIn, 'admin:', isAdminUser);
   
   const adminFunctions = document.getElementById('adminFunctions');
-  if (adminFunctions) adminFunctions.style.display = isLoggedIn ? 'block' : 'none';
+  if (adminFunctions) {
+    const displayMode = adminFunctions.classList.contains('admin-actions') ? 'flex' : 'block';
+    adminFunctions.style.display = isLoggedIn ? displayMode : 'none';
+  }
+
+  if (typeof updateNewsAdminControls === 'function') {
+    updateNewsAdminControls();
+  }
   
   const tagAdminFunctions = document.getElementById('tagAdminFunctions');
   if (tagAdminFunctions) tagAdminFunctions.style.display = isAdminUser ? 'block' : 'none';

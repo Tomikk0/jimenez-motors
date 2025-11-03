@@ -33,6 +33,14 @@ try {
     $modelsStatement = $pdo->query('SELECT name FROM `car_models` ORDER BY `name`');
     $modelOptions = $modelsStatement !== false ? $modelsStatement->fetchAll(PDO::FETCH_COLUMN) : [];
 
+    $newsStatement = $pdo->query(
+        'SELECT id, title, content, created_by, created_at'
+        . ' FROM `news`
+          ORDER BY `created_at` DESC
+          LIMIT 12'
+    );
+    $newsRows = $newsStatement !== false ? $newsStatement->fetchAll(PDO::FETCH_ASSOC) : [];
+
     send_json([
         'data' => [
             'cars' => $cars,
@@ -47,6 +55,15 @@ try {
             }, is_array($members) ? $members : []),
             'tuningOptions' => array_values(array_filter(array_map('strval', is_array($tuningOptions) ? $tuningOptions : []))),
             'modelOptions' => array_values(array_filter(array_map('strval', is_array($modelOptions) ? $modelOptions : []))),
+            'news' => array_map(static function ($row) {
+                return [
+                    'id' => isset($row['id']) ? (int) $row['id'] : null,
+                    'title' => $row['title'] ?? null,
+                    'content' => $row['content'] ?? null,
+                    'created_by' => $row['created_by'] ?? null,
+                    'created_at' => $row['created_at'] ?? null,
+                ];
+            }, is_array($newsRows) ? $newsRows : []),
         ],
     ]);
 } catch (PDOException $exception) {
