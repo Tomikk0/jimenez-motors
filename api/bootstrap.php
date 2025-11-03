@@ -3,12 +3,22 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/common.php';
+require_once __DIR__ . '/cache.php';
+
+const BOOTSTRAP_CACHE_KEY = 'bootstrap';
+const BOOTSTRAP_CACHE_TTL_SECONDS = 15;
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
     send_error('Method not allowed', 405);
 }
 
 try {
+    $cachedPayload = cache_get(BOOTSTRAP_CACHE_KEY, BOOTSTRAP_CACHE_TTL_SECONDS);
+
+    if (is_array($cachedPayload)) {
+        send_json(['data' => $cachedPayload]);
+    }
+
     $pdo = Database::getConnection();
 
     $carsStatement = $pdo->prepare(
@@ -41,31 +51,33 @@ try {
     );
     $newsRows = $newsStatement !== false ? $newsStatement->fetchAll(PDO::FETCH_ASSOC) : [];
 
-    send_json([
-        'data' => [
-            'cars' => $cars,
-            'members' => array_map(static function ($row) {
-                return [
-                    'id' => isset($row['id']) ? (int) $row['id'] : null,
-                    'name' => $row['name'] ?? null,
-                    'phone' => $row['phone'] ?? null,
-                    'rank' => $row['rank'] ?? null,
-                    'created_at' => $row['created_at'] ?? null,
-                ];
-            }, is_array($members) ? $members : []),
-            'tuningOptions' => array_values(array_filter(array_map('strval', is_array($tuningOptions) ? $tuningOptions : []))),
-            'modelOptions' => array_values(array_filter(array_map('strval', is_array($modelOptions) ? $modelOptions : []))),
-            'news' => array_map(static function ($row) {
-                return [
-                    'id' => isset($row['id']) ? (int) $row['id'] : null,
-                    'title' => $row['title'] ?? null,
-                    'content' => $row['content'] ?? null,
-                    'created_by' => $row['created_by'] ?? null,
-                    'created_at' => $row['created_at'] ?? null,
-                ];
-            }, is_array($newsRows) ? $newsRows : []),
-        ],
-    ]);
+    $payload = [
+        'cars' => $cars,
+        'members' => array_map(static function ($row) {
+            return [
+                'id' => isset($row['id']) ? (int) $row['id'] : null,
+                'name' => $row['name'] ?? null,
+                'phone' => $row['phone'] ?? null,
+                'rank' => $row['rank'] ?? null,
+                'created_at' => $row['created_at'] ?? null,
+            ];
+        }, is_array($members) ? $members : []),
+        'tuningOptions' => array_values(array_filter(array_map('strval', is_array($tuningOptions) ? $tuningOptions : []))),
+        'modelOptions' => array_values(array_filter(array_map('strval', is_array($modelOptions) ? $modelOptions : []))),
+        'news' => array_map(static function ($row) {
+            return [
+                'id' => isset($row['id']) ? (int) $row['id'] : null,
+                'title' => $row['title'] ?? null,
+                'content' => $row['content'] ?? null,
+                'created_by' => $row['created_by'] ?? null,
+                'created_at' => $row['created_at'] ?? null,
+            ];
+        }, is_array($newsRows) ? $newsRows : []),
+    ];
+
+    cache_set(BOOTSTRAP_CACHE_KEY, $payload);
+
+    send_json(['data' => $payload]);
 } catch (PDOException $exception) {
     send_error('Database error', 500, ['message' => $exception->getMessage()]);
 }
