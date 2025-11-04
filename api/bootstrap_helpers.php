@@ -16,7 +16,9 @@ function fetch_bootstrap_payload(): array
     $pdo = Database::getConnection();
 
     $carsStatement = $pdo->prepare(
-        'SELECT id, model, tuning, purchase_price, desired_price, sale_price, sold, added_by, image_url, image_data_url, sold_by, sold_at, created_at '
+        'SELECT id, model, tuning, purchase_price, desired_price, sale_price, sold, added_by, image_url,
+                CASE WHEN image_data_url IS NOT NULL AND image_data_url <> "" THEN 1 ELSE 0 END AS has_image_data_url,
+                sold_by, sold_at, created_at, updated_at '
         . 'FROM `cars`
           WHERE `is_gallery` = 0 AND `sold` = 0
           ORDER BY `created_at` DESC'

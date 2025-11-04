@@ -238,6 +238,15 @@ let bootstrapCacheDisableReason = '';
 let bootstrapImageDbPromise = null;
 let bootstrapImagePersistenceAvailable = typeof indexedDB !== 'undefined';
 let bootstrapPersistenceTask = null;
+const BOOTSTRAP_IMAGE_FETCH_IDLE_TIMEOUT_MS = 2000;
+const BOOTSTRAP_IMAGE_FETCH_DELAY_MS = 120;
+const bootstrapImageFetchQueue = [];
+const bootstrapImageFetchPendingKeys = new Set();
+let bootstrapImageFetchScheduledHandle = null;
+let bootstrapImageFetchScheduledViaIdle = false;
+let bootstrapImageFetchProcessing = false;
+let pendingBootstrapCarsRefresh = false;
+let pendingBootstrapCarsRefreshTarget = null;
 
 function cancelPendingBootstrapPersistence() {
   if (!bootstrapPersistenceTask || typeof bootstrapPersistenceTask.cancel !== 'function') {
@@ -319,6 +328,55 @@ function isQuotaExceededError(error) {
 
   return false;
 }
+
+function normalizeBootstrapCars(cars) {
+  if (!Array.isArray(cars)) {
+    return [];
+  }
+
+  return cars.map((car, index) => {
+    if (!car || typeof car !== 'object') {
+      return car;
+    }
+
+    const normalized = { ...car };
+
+    if (typeof normalized.hasImageDataUrl === 'undefined') {
+      if (typeof normalized.has_image_data_url !== 'undefined') {
+        normalized.hasImageDataUrl = Boolean(normalized.has_image_data_url);
+      } else {
+        normalized.hasImageDataUrl = typeof normalized.image_data_url === 'string' && normalized.image_data_url.trim().length > 0;
+      }
+    } else {
+      normalized.hasImageDataUrl = Boolean(normalized.hasImageDataUrl);
+    }
+
+    delete normalized.has_image_data_url;
+
+    if (typeof normalized.image_data_url !== 'string') {
+      normalized.image_data_url = normalized.image_data_url ? String(normalized.image_data_url) : '';
+    }
+
+    if (normalized.image_data_url.trim().length > 0) {
+      normalized.hasImageDataUrl = true;
+      normalized.image_data_url = normalized.image_data_url.trim();
+    } else {
+      normalized.image_data_url = '';
+    }
+
+    if (!normalized.imageCacheKey || typeof normalized.imageCacheKey !== 'string') {
+      if (typeof normalized.image_cache_key === 'string') {
+        normalized.imageCacheKey = normalized.image_cache_key;
+      } else {
+        normalized.imageCacheKey = createImageCacheKey(normalized, index);
+      }
+    }
+
+    delete normalized.image_cache_key;
+
+    return normalized;
+  });
+}
 const MAX_BOOTSTRAP_REFETCH_ATTEMPTS = 3;
 const BOOTSTRAP_REFETCH_BASE_DELAY_MS = 500;
 
@@ -352,8 +410,6 @@ async function loadCachedBootstrapData() {
     if (Date.now() - timestamp > LOCAL_BOOTSTRAP_CACHE_TTL_MS) {
       return null;
     }
-
-    queueBootstrapImageRehydration(data);
 
     return data;
   } catch (error) {
@@ -651,19 +707,22 @@ function cleanupBootstrapImages(db, keysToKeep) {
 }
 
 async function persistBootstrapImages(entries, referencedKeys) {
-  if (!Array.isArray(entries) && !Array.isArray(referencedKeys)) {
+  const hasEntries = Array.isArray(entries) && entries.length > 0;
+  const hasReferencedKeys = Array.isArray(referencedKeys);
+
+  if (!hasEntries && !hasReferencedKeys) {
     return;
   }
 
   const db = await openBootstrapImageDb();
   if (!db) {
-    if (Array.isArray(entries) && entries.length > 0) {
+    if (hasEntries) {
       bootstrapImagePersistenceAvailable = false;
     }
     return;
   }
 
-  if (Array.isArray(entries) && entries.length > 0) {
+  if (hasEntries) {
     await new Promise(resolve => {
       const tx = db.transaction(BOOTSTRAP_IMAGE_OBJECT_STORE, 'readwrite');
       const store = tx.objectStore(BOOTSTRAP_IMAGE_OBJECT_STORE);
@@ -694,7 +753,258 @@ async function persistBootstrapImages(entries, referencedKeys) {
     });
   }
 
-  await cleanupBootstrapImages(db, referencedKeys || []);
+  if (hasReferencedKeys) {
+    await cleanupBootstrapImages(db, referencedKeys);
+  }
+}
+
+function cacheBootstrapImageRecord(cacheKey, dataUrl) {
+  if (!cacheKey || typeof dataUrl !== 'string' || dataUrl.trim().length === 0) {
+    return;
+  }
+
+  try {
+    const promise = persistBootstrapImages([{ key: cacheKey, dataUrl }], null);
+    if (promise && typeof promise.catch === 'function') {
+      promise.catch(error => {
+        console.warn('⚠️ Bootstrap kép gyorsítótár mentési hiba:', error);
+      });
+    }
+  } catch (error) {
+    console.warn('⚠️ Bootstrap kép gyorsítótár mentési kivétel:', error);
+  }
+}
+
+async function fetchBootstrapImageData(carId) {
+  if (!carId || Number.isNaN(carId)) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/car_image.php?id=${encodeURIComponent(carId)}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      },
+      cache: 'no-store'
+    });
+
+    let payload = null;
+
+    try {
+      payload = await response.json();
+    } catch (parseError) {
+      if (response.ok) {
+        throw new Error('Érvénytelen választ kapott a kép lekérésekor');
+      }
+    }
+
+    if (!response.ok) {
+      const errorMessage = payload && payload.error ? payload.error.message : 'Ismeretlen hiba a kép lekérésekor';
+      throw new Error(errorMessage);
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+
+    const data = payload.data && typeof payload.data === 'object' ? payload.data : payload;
+
+    const imageDataUrl = typeof data.image_data_url === 'string' ? data.image_data_url : null;
+    const imageUrl = typeof data.image_url === 'string' ? data.image_url : null;
+    const cacheKey = typeof data.image_cache_key === 'string' ? data.image_cache_key : null;
+    const imageUpdatedAt = typeof data.image_updated_at === 'string' ? data.image_updated_at : null;
+
+    return {
+      imageDataUrl,
+      imageUrl,
+      cacheKey,
+      imageUpdatedAt
+    };
+  } catch (error) {
+    console.warn('⚠️ Bootstrap kép lekérési hiba:', error);
+    return null;
+  }
+}
+
+function scheduleBootstrapCarsRefresh(cars) {
+  if (!Array.isArray(cars)) {
+    return;
+  }
+
+  pendingBootstrapCarsRefreshTarget = cars;
+
+  if (pendingBootstrapCarsRefresh) {
+    return;
+  }
+
+  pendingBootstrapCarsRefresh = true;
+
+  const run = () => {
+    pendingBootstrapCarsRefresh = false;
+    const target = pendingBootstrapCarsRefreshTarget;
+    pendingBootstrapCarsRefreshTarget = null;
+
+    if (Array.isArray(target)) {
+      refreshCarsFromBootstrap(target);
+    }
+  };
+
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(run);
+  } else {
+    setTimeout(run, 0);
+  }
+}
+
+async function processBootstrapImageQueue() {
+  if (bootstrapImageFetchProcessing) {
+    return;
+  }
+
+  bootstrapImageFetchProcessing = true;
+
+  while (bootstrapImageFetchQueue.length > 0) {
+    const item = bootstrapImageFetchQueue.shift();
+
+    if (!item) {
+      continue;
+    }
+
+    const { car, cacheKey, carId, collection } = item;
+
+    if (cacheKey) {
+      bootstrapImageFetchPendingKeys.delete(cacheKey);
+    }
+
+    if (!car || typeof car !== 'object') {
+      continue;
+    }
+
+    if (!car.hasImageDataUrl) {
+      continue;
+    }
+
+    if (typeof car.image_data_url === 'string' && car.image_data_url.trim().length > 0) {
+      continue;
+    }
+
+    const resolvedCarId = carId || car.id || car.car_id;
+
+    if (!resolvedCarId) {
+      continue;
+    }
+
+    const payload = await fetchBootstrapImageData(resolvedCarId);
+
+    if (!payload) {
+      continue;
+    }
+
+    const resolvedCacheKey = cacheKey || payload.cacheKey || createImageCacheKey(car, 0);
+    const dataUrl = typeof payload.imageDataUrl === 'string' && payload.imageDataUrl.trim().length > 0
+      ? payload.imageDataUrl
+      : null;
+    const imageUrl = typeof payload.imageUrl === 'string' && payload.imageUrl.trim().length > 0
+      ? payload.imageUrl
+      : null;
+
+    let updated = false;
+
+    if (dataUrl) {
+      car.image_data_url = dataUrl;
+      car.hasImageDataUrl = true;
+      if (resolvedCacheKey) {
+        car.imageCacheKey = resolvedCacheKey;
+        cacheBootstrapImageRecord(resolvedCacheKey, dataUrl);
+      }
+      updated = true;
+    } else if (imageUrl) {
+      car.image_data_url = imageUrl;
+      car.hasImageDataUrl = true;
+      updated = true;
+    } else {
+      car.hasImageDataUrl = false;
+    }
+
+    if (updated) {
+      scheduleBootstrapCarsRefresh(collection);
+    }
+  }
+
+  bootstrapImageFetchProcessing = false;
+}
+
+function scheduleBootstrapImageFetches(data) {
+  if (!data || typeof data !== 'object' || !Array.isArray(data.cars)) {
+    return;
+  }
+
+  data.cars.forEach((car, index) => {
+    if (!car || typeof car !== 'object') {
+      return;
+    }
+
+    if (!car.hasImageDataUrl) {
+      return;
+    }
+
+    if (typeof car.image_data_url === 'string' && car.image_data_url.trim().length > 0) {
+      return;
+    }
+
+    const cacheKey = car.imageCacheKey || createImageCacheKey(car, index);
+
+    if (!cacheKey || bootstrapImageFetchPendingKeys.has(cacheKey)) {
+      return;
+    }
+
+    const carId = car.id || car.car_id;
+
+    bootstrapImageFetchPendingKeys.add(cacheKey);
+    bootstrapImageFetchQueue.push({
+      car,
+      cacheKey,
+      carId,
+      collection: data.cars
+    });
+  });
+
+  if (bootstrapImageFetchQueue.length === 0 || bootstrapImageFetchProcessing) {
+    return;
+  }
+
+  if (bootstrapImageFetchScheduledHandle) {
+    return;
+  }
+
+  if (typeof requestIdleCallback === 'function') {
+    bootstrapImageFetchScheduledViaIdle = true;
+    bootstrapImageFetchScheduledHandle = requestIdleCallback(() => {
+      bootstrapImageFetchScheduledHandle = null;
+      bootstrapImageFetchScheduledViaIdle = false;
+      processBootstrapImageQueue().catch(error => {
+        console.warn('⚠️ Bootstrap kép feldolgozási hiba:', error);
+      });
+    }, { timeout: BOOTSTRAP_IMAGE_FETCH_IDLE_TIMEOUT_MS });
+  } else {
+    bootstrapImageFetchScheduledViaIdle = false;
+    bootstrapImageFetchScheduledHandle = setTimeout(() => {
+      bootstrapImageFetchScheduledHandle = null;
+      processBootstrapImageQueue().catch(error => {
+        console.warn('⚠️ Bootstrap kép feldolgozási hiba:', error);
+      });
+    }, BOOTSTRAP_IMAGE_FETCH_DELAY_MS);
+  }
+}
+
+function ensureBootstrapImages(data) {
+  if (!data || typeof data !== 'object') {
+    return;
+  }
+
+  queueBootstrapImageRehydration(data);
+  scheduleBootstrapImageFetches(data);
 }
 
 async function rehydrateBootstrapImages(data) {
@@ -814,7 +1124,7 @@ function queueBootstrapImageRehydration(data) {
     promise
       .then(updated => {
         if (updated) {
-          refreshCarsFromBootstrap(data.cars);
+          scheduleBootstrapCarsRefresh(data.cars);
         }
       })
       .catch(error => {
@@ -982,6 +1292,10 @@ function applyBootstrapData(data) {
     return false;
   }
 
+  if (Array.isArray(data.cars)) {
+    data.cars = normalizeBootstrapCars(data.cars);
+  }
+
   if (Array.isArray(data.tuningOptions)) {
     tuningOptions = data.tuningOptions.slice();
     renderTuningOptions(tuningOptions);
@@ -1026,6 +1340,8 @@ function applyBootstrapData(data) {
       renderCars(allCars);
     }
   }
+
+  ensureBootstrapImages(data);
 
   return true;
 }
