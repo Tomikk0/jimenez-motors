@@ -237,11 +237,29 @@ let bootstrapCacheDisabled = false;
 let bootstrapCacheDisableReason = '';
 let bootstrapImageDbPromise = null;
 let bootstrapImagePersistenceAvailable = typeof indexedDB !== 'undefined';
+let bootstrapPersistenceTask = null;
+
+function cancelPendingBootstrapPersistence() {
+  if (!bootstrapPersistenceTask || typeof bootstrapPersistenceTask.cancel !== 'function') {
+    bootstrapPersistenceTask = null;
+    return;
+  }
+
+  try {
+    bootstrapPersistenceTask.cancel();
+  } catch (error) {
+    console.warn('⚠️ Bootstrap gyorsítótár írás ütemezésének megszakítása sikertelen:', error);
+  }
+
+  bootstrapPersistenceTask = null;
+}
 
 function disableBootstrapCache(reason, error) {
   if (bootstrapCacheDisabled) {
     return;
   }
+
+  cancelPendingBootstrapPersistence();
 
   bootstrapCacheDisabled = true;
   bootstrapCacheDisableReason = reason;
@@ -342,6 +360,66 @@ async function loadCachedBootstrapData() {
     console.warn('⚠️ Bootstrap cache read error:', error);
     return null;
   }
+}
+
+function scheduleBootstrapPersistence(data) {
+  if (bootstrapCacheDisabled || !data || typeof data !== 'object') {
+    return;
+  }
+
+  cancelPendingBootstrapPersistence();
+
+  const persist = () => {
+    bootstrapPersistenceTask = null;
+    try {
+      saveCachedBootstrapData(data);
+    } catch (error) {
+      console.warn('⚠️ Bootstrap cache késleltetett mentési hiba:', error);
+    }
+  };
+
+  const scheduleIdle = () => {
+    if (typeof requestIdleCallback === 'function') {
+      const idleHandle = requestIdleCallback(() => {
+        bootstrapPersistenceTask = null;
+        persist();
+      }, { timeout: 1500 });
+
+      bootstrapPersistenceTask = {
+        cancel: () => {
+          if (typeof cancelIdleCallback === 'function') {
+            cancelIdleCallback(idleHandle);
+          }
+        }
+      };
+
+      return;
+    }
+
+    const timeoutHandle = setTimeout(() => {
+      bootstrapPersistenceTask = null;
+      persist();
+    }, 0);
+
+    bootstrapPersistenceTask = {
+      cancel: () => clearTimeout(timeoutHandle)
+    };
+  };
+
+  if (typeof requestAnimationFrame === 'function') {
+    const frameHandle = requestAnimationFrame(() => {
+      bootstrapPersistenceTask = null;
+      scheduleIdle();
+    });
+
+    bootstrapPersistenceTask = {
+      cancel: () => cancelAnimationFrame(frameHandle)
+    };
+
+    return;
+  }
+
+  scheduleIdle();
 }
 
 function createImageCacheKey(car, index) {
@@ -752,6 +830,8 @@ function clearCachedBootstrapData() {
     return;
   }
 
+  cancelPendingBootstrapPersistence();
+
   try {
     localStorage.removeItem(LOCAL_BOOTSTRAP_CACHE_KEY);
   } catch (error) {
@@ -838,7 +918,7 @@ function processBootstrapResult(result, { persist = true } = {}) {
   }
 
   if (persist) {
-    saveCachedBootstrapData(result.data);
+    scheduleBootstrapPersistence(result.data);
   }
 
   handleBootstrapRefetch(result.cacheStatus);
