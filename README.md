@@ -19,6 +19,8 @@ A Jimenez Motors admin felület mostantól egy PHP + MariaDB alapú háttérrel 
 - A Supabase felhős adatbázis teljesen kiváltásra került; minden adat most a MariaDB szerveren tárolódik.
 - Minden beszúrás, frissítés és lekérdezés a MariaDB adatbázison keresztül történik.
 - A képek tárolása továbbra is base64 formátumban lehetséges, vagy tetszőlegesen bővíthető a `uploads/` mappával.
+- A kezdeti műszerfal-adatok (`api/bootstrap.php`) minden lekérésnél először a fájlrendszeres gyorsítótárból érkeznek. Ha a tárolt adat friss, azonnal visszaküldjük; ha már lejárt, a kérés kiszolgálása után háttérfolyamat indul a `scripts/refresh_bootstrap_cache.php` futtatásával, így nincs szükség kézi futtatásra.
+- Igény esetén ütemezhetsz egy cron feladatot, ami néhány percenként meghívja a `scripts/refresh_bootstrap_cache.php` fájlt, de ez csak opcionális optimalizálás nagy forgalom esetén.
 
 ## Fontos fájlok
 

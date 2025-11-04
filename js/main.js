@@ -225,14 +225,1034 @@ function loadCurrentPage() {
 }
 
 // === ADATBETÖLTÉS ===
+const BOOTSTRAP_TIMEOUT_MS = 2000;
+const LOCAL_BOOTSTRAP_CACHE_KEY = 'jimenezMotors_bootstrapCache';
+const LOCAL_BOOTSTRAP_CACHE_TTL_MS = 5 * 60 * 1000;
+const LOCAL_BOOTSTRAP_CACHE_MAX_BYTES = 4 * 1024 * 1024; // ~4 MB biztonsági limit
+const BOOTSTRAP_IMAGE_DB_NAME = 'JimenezBootstrapCache';
+const BOOTSTRAP_IMAGE_DB_VERSION = 1;
+const BOOTSTRAP_IMAGE_OBJECT_STORE = 'carImages';
+
+let bootstrapCacheDisabled = false;
+let bootstrapCacheDisableReason = '';
+let bootstrapImageDbPromise = null;
+let bootstrapImagePersistenceAvailable = typeof indexedDB !== 'undefined';
+let bootstrapPersistenceTask = null;
+const BOOTSTRAP_IMAGE_FETCH_IDLE_TIMEOUT_MS = 2000;
+const BOOTSTRAP_IMAGE_FETCH_DELAY_MS = 120;
+const bootstrapImageFetchQueue = [];
+const bootstrapImageFetchPendingKeys = new Set();
+let bootstrapImageFetchScheduledHandle = null;
+let bootstrapImageFetchScheduledViaIdle = false;
+let bootstrapImageFetchProcessing = false;
+let pendingBootstrapCarsRefresh = false;
+let pendingBootstrapCarsRefreshTarget = null;
+
+function cancelPendingBootstrapPersistence() {
+  if (!bootstrapPersistenceTask || typeof bootstrapPersistenceTask.cancel !== 'function') {
+    bootstrapPersistenceTask = null;
+    return;
+  }
+
+  try {
+    bootstrapPersistenceTask.cancel();
+  } catch (error) {
+    console.warn('⚠️ Bootstrap gyorsítótár írás ütemezésének megszakítása sikertelen:', error);
+  }
+
+  bootstrapPersistenceTask = null;
+}
+
+function disableBootstrapCache(reason, error) {
+  if (bootstrapCacheDisabled) {
+    return;
+  }
+
+  cancelPendingBootstrapPersistence();
+
+  bootstrapCacheDisabled = true;
+  bootstrapCacheDisableReason = reason;
+
+  try {
+    localStorage.removeItem(LOCAL_BOOTSTRAP_CACHE_KEY);
+  } catch (storageError) {
+    console.warn('⚠️ Bootstrap cache disable cleanup error:', storageError);
+  }
+
+  if (typeof indexedDB !== 'undefined') {
+    try {
+      const deleteRequest = indexedDB.deleteDatabase(BOOTSTRAP_IMAGE_DB_NAME);
+      deleteRequest.onerror = () => {
+        console.warn('⚠️ Bootstrap kép gyorsítótár törlési hiba:', deleteRequest.error);
+      };
+      deleteRequest.onsuccess = () => {
+        bootstrapImageDbPromise = null;
+        bootstrapImagePersistenceAvailable = typeof indexedDB !== 'undefined';
+      };
+    } catch (dbError) {
+      console.warn('⚠️ Bootstrap kép gyorsítótár törlési kivétel:', dbError);
+      bootstrapImagePersistenceAvailable = typeof indexedDB !== 'undefined';
+    }
+  } else {
+    bootstrapImagePersistenceAvailable = false;
+  }
+
+  if (error) {
+    console.warn(`⚠️ Bootstrap cache letiltva (${reason}):`, error);
+  } else {
+    console.warn(`⚠️ Bootstrap cache letiltva (${reason})`);
+  }
+}
+
+function estimateStringBytes(str) {
+  if (typeof TextEncoder !== 'undefined') {
+    return new TextEncoder().encode(str).length;
+  }
+
+  // Fallback becslés, UTF-16 karakterenként 2 byte-tal számolunk
+  return str.length * 2;
+}
+
+function isQuotaExceededError(error) {
+  if (!error) {
+    return false;
+  }
+
+  if (error.code && error.code === 22) {
+    return true;
+  }
+
+  if (error.name && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+    return true;
+  }
+
+  return false;
+}
+
+function normalizeBootstrapCars(cars) {
+  if (!Array.isArray(cars)) {
+    return [];
+  }
+
+  return cars.map((car, index) => {
+    if (!car || typeof car !== 'object') {
+      return car;
+    }
+
+    const normalized = { ...car };
+
+    if (typeof normalized.hasImageDataUrl === 'undefined') {
+      if (typeof normalized.has_image_data_url !== 'undefined') {
+        normalized.hasImageDataUrl = Boolean(normalized.has_image_data_url);
+      } else {
+        normalized.hasImageDataUrl = typeof normalized.image_data_url === 'string' && normalized.image_data_url.trim().length > 0;
+      }
+    } else {
+      normalized.hasImageDataUrl = Boolean(normalized.hasImageDataUrl);
+    }
+
+    delete normalized.has_image_data_url;
+
+    if (typeof normalized.image_data_url !== 'string') {
+      normalized.image_data_url = normalized.image_data_url ? String(normalized.image_data_url) : '';
+    }
+
+    if (normalized.image_data_url.trim().length > 0) {
+      normalized.hasImageDataUrl = true;
+      normalized.image_data_url = normalized.image_data_url.trim();
+    } else {
+      normalized.image_data_url = '';
+    }
+
+    if (!normalized.imageCacheKey || typeof normalized.imageCacheKey !== 'string') {
+      if (typeof normalized.image_cache_key === 'string') {
+        normalized.imageCacheKey = normalized.image_cache_key;
+      } else {
+        normalized.imageCacheKey = createImageCacheKey(normalized, index);
+      }
+    }
+
+    delete normalized.image_cache_key;
+
+    return normalized;
+  });
+}
+const MAX_BOOTSTRAP_REFETCH_ATTEMPTS = 3;
+const BOOTSTRAP_REFETCH_BASE_DELAY_MS = 500;
+
+let bootstrapRefetchAttempts = 0;
+let bootstrapRefetchTimer = null;
+
+async function loadCachedBootstrapData() {
+  if (bootstrapCacheDisabled) {
+    if (bootstrapCacheDisableReason) {
+      console.debug('ℹ️ Bootstrap cache kihagyva:', bootstrapCacheDisableReason);
+    }
+    return null;
+  }
+
+  try {
+    const raw = localStorage.getItem(LOCAL_BOOTSTRAP_CACHE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    const { timestamp, data } = parsed;
+    if (typeof timestamp !== 'number' || !data) {
+      return null;
+    }
+
+    if (Date.now() - timestamp > LOCAL_BOOTSTRAP_CACHE_TTL_MS) {
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.warn('⚠️ Bootstrap cache read error:', error);
+    return null;
+  }
+}
+
+function scheduleBootstrapPersistence(data) {
+  if (bootstrapCacheDisabled || !data || typeof data !== 'object') {
+    return;
+  }
+
+  cancelPendingBootstrapPersistence();
+
+  const persist = () => {
+    bootstrapPersistenceTask = null;
+    try {
+      saveCachedBootstrapData(data);
+    } catch (error) {
+      console.warn('⚠️ Bootstrap cache késleltetett mentési hiba:', error);
+    }
+  };
+
+  const scheduleIdle = () => {
+    if (typeof requestIdleCallback === 'function') {
+      const idleHandle = requestIdleCallback(() => {
+        bootstrapPersistenceTask = null;
+        persist();
+      }, { timeout: 1500 });
+
+      bootstrapPersistenceTask = {
+        cancel: () => {
+          if (typeof cancelIdleCallback === 'function') {
+            cancelIdleCallback(idleHandle);
+          }
+        }
+      };
+
+      return;
+    }
+
+    const timeoutHandle = setTimeout(() => {
+      bootstrapPersistenceTask = null;
+      persist();
+    }, 0);
+
+    bootstrapPersistenceTask = {
+      cancel: () => clearTimeout(timeoutHandle)
+    };
+  };
+
+  if (typeof requestAnimationFrame === 'function') {
+    const frameHandle = requestAnimationFrame(() => {
+      bootstrapPersistenceTask = null;
+      scheduleIdle();
+    });
+
+    bootstrapPersistenceTask = {
+      cancel: () => cancelAnimationFrame(frameHandle)
+    };
+
+    return;
+  }
+
+  scheduleIdle();
+}
+
+function createImageCacheKey(car, index) {
+  if (car && (car.id || car.car_id)) {
+    return `car-${car.id || car.car_id}`;
+  }
+
+  if (car && car.vin) {
+    return `vin-${car.vin}`;
+  }
+
+  return `idx-${index}`;
+}
+
+function createCacheSafeBootstrapSnapshot(data) {
+  if (!data || typeof data !== 'object') {
+    return null;
+  }
+
+  const snapshot = {
+    ...data,
+  };
+
+  const imageEntries = [];
+  const referencedImageKeys = [];
+  const canPersistImages = bootstrapImagePersistenceAvailable;
+
+  if (Array.isArray(data.cars)) {
+    snapshot.cars = data.cars.map((car, index) => {
+      if (!car || typeof car !== 'object') {
+        return car;
+      }
+
+      const sanitized = { ...car };
+
+      if (canPersistImages && typeof sanitized.image_data_url === 'string' && sanitized.image_data_url.trim().length > 0) {
+        const cacheKey = createImageCacheKey(sanitized, index);
+        imageEntries.push({
+          key: cacheKey,
+          dataUrl: sanitized.image_data_url
+        });
+        sanitized.imageCacheKey = cacheKey;
+        sanitized.hasImageDataUrl = true;
+        delete sanitized.image_data_url;
+      } else if (sanitized.imageCacheKey && sanitized.hasImageDataUrl) {
+        sanitized.imageCacheKey = String(sanitized.imageCacheKey);
+        sanitized.hasImageDataUrl = Boolean(sanitized.hasImageDataUrl);
+      } else {
+        sanitized.hasImageDataUrl = Boolean(
+          (typeof sanitized.image_data_url === 'string' && sanitized.image_data_url.trim().length > 0) ||
+          (typeof sanitized.imageUrl === 'string' && sanitized.imageUrl.trim().length > 0)
+        );
+
+        if (!sanitized.imageCacheKey && sanitized.hasImageDataUrl) {
+          sanitized.imageCacheKey = createImageCacheKey(sanitized, index);
+        }
+
+        if (sanitized.image_data_url && sanitized.image_data_url.trim().length === 0) {
+          delete sanitized.image_data_url;
+        }
+      }
+
+      if (sanitized.hasImageDataUrl && sanitized.imageCacheKey && canPersistImages) {
+        referencedImageKeys.push(sanitized.imageCacheKey);
+      }
+
+      return sanitized;
+    });
+  }
+
+  return {
+    snapshot,
+    imageEntries,
+    referencedImageKeys
+  };
+}
+
+function saveCachedBootstrapData(data) {
+  if (bootstrapCacheDisabled) {
+    return;
+  }
+
+  try {
+    const cacheSafeResult = createCacheSafeBootstrapSnapshot(data);
+
+    if (!cacheSafeResult || !cacheSafeResult.snapshot) {
+      return;
+    }
+
+    const { snapshot: cacheSafeData, imageEntries, referencedImageKeys } = cacheSafeResult;
+
+    const payload = JSON.stringify({
+      timestamp: Date.now(),
+      data: cacheSafeData
+    });
+
+    const payloadSize = estimateStringBytes(payload);
+
+    if (payloadSize > LOCAL_BOOTSTRAP_CACHE_MAX_BYTES) {
+      disableBootstrapCache('túl nagy gyorsítótár (payload méret: ' + payloadSize + ' byte)');
+      return;
+    }
+
+    localStorage.setItem(LOCAL_BOOTSTRAP_CACHE_KEY, payload);
+
+    const entries = Array.isArray(imageEntries) ? imageEntries : [];
+    const keys = Array.isArray(referencedImageKeys) ? referencedImageKeys : [];
+
+    persistBootstrapImages(entries, keys)
+      .then(() => {
+        if (entries.length > 0 && !bootstrapImagePersistenceAvailable) {
+          disableBootstrapCache('kép gyorsítótár nem elérhető');
+        }
+      })
+      .catch(error => {
+        console.warn('⚠️ Bootstrap kép gyorsítótár mentési hiba:', error);
+      });
+  } catch (error) {
+    if (isQuotaExceededError(error)) {
+      disableBootstrapCache('kvóta túllépés', error);
+    } else {
+      console.warn('⚠️ Bootstrap cache write error:', error);
+    }
+  }
+}
+
+function openBootstrapImageDb() {
+  if (typeof indexedDB === 'undefined') {
+    bootstrapImagePersistenceAvailable = false;
+    return Promise.resolve(null);
+  }
+
+  if (bootstrapImageDbPromise) {
+    return bootstrapImageDbPromise;
+  }
+
+  bootstrapImageDbPromise = new Promise(resolve => {
+    try {
+      const request = indexedDB.open(BOOTSTRAP_IMAGE_DB_NAME, BOOTSTRAP_IMAGE_DB_VERSION);
+
+      request.onupgradeneeded = event => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(BOOTSTRAP_IMAGE_OBJECT_STORE)) {
+          db.createObjectStore(BOOTSTRAP_IMAGE_OBJECT_STORE);
+        }
+      };
+
+      request.onsuccess = event => {
+        const db = event.target.result;
+
+        bootstrapImagePersistenceAvailable = true;
+        db.onclose = () => {
+          bootstrapImageDbPromise = null;
+        };
+
+        resolve(db);
+      };
+
+      request.onerror = () => {
+        console.warn('⚠️ Nem sikerült megnyitni az IndexedDB alapú bootstrap kép gyorsítótárat:', request.error);
+        bootstrapImageDbPromise = null;
+        bootstrapImagePersistenceAvailable = false;
+        resolve(null);
+      };
+
+      request.onblocked = () => {
+        console.warn('⚠️ IndexedDB bootstrap kép gyorsítótár blokkolva egy másik megnyitás által');
+      };
+    } catch (error) {
+      console.warn('⚠️ IndexedDB megnyitási hiba:', error);
+      bootstrapImageDbPromise = null;
+      bootstrapImagePersistenceAvailable = false;
+      resolve(null);
+    }
+  });
+
+  return bootstrapImageDbPromise;
+}
+
+function cleanupBootstrapImages(db, keysToKeep) {
+  if (!db) {
+    return Promise.resolve();
+  }
+
+  const shouldKeep = new Set(keysToKeep || []);
+
+  return new Promise(resolve => {
+    const tx = db.transaction(BOOTSTRAP_IMAGE_OBJECT_STORE, 'readwrite');
+    const store = tx.objectStore(BOOTSTRAP_IMAGE_OBJECT_STORE);
+
+    if (typeof store.getAllKeys === 'function') {
+      const request = store.getAllKeys();
+      request.onsuccess = event => {
+        const keys = event.target.result || [];
+        keys.forEach(key => {
+          if (!shouldKeep.has(key)) {
+            store.delete(key);
+          }
+        });
+      };
+      request.onerror = () => {
+        console.warn('⚠️ Bootstrap kép kulcsok beolvasási hiba:', request.error);
+        bootstrapImagePersistenceAvailable = false;
+      };
+    } else {
+      const cursorRequest = store.openKeyCursor();
+      cursorRequest.onsuccess = event => {
+        const cursor = event.target.result;
+        if (cursor) {
+          if (!shouldKeep.has(cursor.key)) {
+            store.delete(cursor.key);
+          }
+          cursor.continue();
+        }
+      };
+      cursorRequest.onerror = () => {
+        console.warn('⚠️ Bootstrap kép kurzor hiba:', cursorRequest.error);
+        bootstrapImagePersistenceAvailable = false;
+      };
+    }
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => {
+      console.warn('⚠️ Bootstrap kép gyorsítótár tisztítási tranzakció hiba:', tx.error);
+      bootstrapImagePersistenceAvailable = false;
+      resolve();
+    };
+  });
+}
+
+async function persistBootstrapImages(entries, referencedKeys) {
+  const hasEntries = Array.isArray(entries) && entries.length > 0;
+  const hasReferencedKeys = Array.isArray(referencedKeys);
+
+  if (!hasEntries && !hasReferencedKeys) {
+    return;
+  }
+
+  const db = await openBootstrapImageDb();
+  if (!db) {
+    if (hasEntries) {
+      bootstrapImagePersistenceAvailable = false;
+    }
+    return;
+  }
+
+  if (hasEntries) {
+    await new Promise(resolve => {
+      const tx = db.transaction(BOOTSTRAP_IMAGE_OBJECT_STORE, 'readwrite');
+      const store = tx.objectStore(BOOTSTRAP_IMAGE_OBJECT_STORE);
+      const timestamp = Date.now();
+
+      entries.forEach(entry => {
+        if (!entry || !entry.key || typeof entry.dataUrl !== 'string') {
+          return;
+        }
+
+        try {
+          store.put({
+            dataUrl: entry.dataUrl,
+            updatedAt: timestamp
+          }, entry.key);
+        } catch (error) {
+          console.warn('⚠️ Bootstrap kép beillesztési hiba:', error);
+          bootstrapImagePersistenceAvailable = false;
+        }
+      });
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => {
+        console.warn('⚠️ Bootstrap kép írási tranzakció hiba:', tx.error);
+        bootstrapImagePersistenceAvailable = false;
+        resolve();
+      };
+    });
+  }
+
+  if (hasReferencedKeys) {
+    await cleanupBootstrapImages(db, referencedKeys);
+  }
+}
+
+function cacheBootstrapImageRecord(cacheKey, dataUrl) {
+  if (!cacheKey || typeof dataUrl !== 'string' || dataUrl.trim().length === 0) {
+    return;
+  }
+
+  try {
+    const promise = persistBootstrapImages([{ key: cacheKey, dataUrl }], null);
+    if (promise && typeof promise.catch === 'function') {
+      promise.catch(error => {
+        console.warn('⚠️ Bootstrap kép gyorsítótár mentési hiba:', error);
+      });
+    }
+  } catch (error) {
+    console.warn('⚠️ Bootstrap kép gyorsítótár mentési kivétel:', error);
+  }
+}
+
+async function fetchBootstrapImageData(carId) {
+  if (!carId || Number.isNaN(carId)) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/car_image.php?id=${encodeURIComponent(carId)}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json'
+      },
+      cache: 'no-store'
+    });
+
+    let payload = null;
+
+    try {
+      payload = await response.json();
+    } catch (parseError) {
+      if (response.ok) {
+        throw new Error('Érvénytelen választ kapott a kép lekérésekor');
+      }
+    }
+
+    if (!response.ok) {
+      const errorMessage = payload && payload.error ? payload.error.message : 'Ismeretlen hiba a kép lekérésekor';
+      throw new Error(errorMessage);
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+
+    const data = payload.data && typeof payload.data === 'object' ? payload.data : payload;
+
+    const imageDataUrl = typeof data.image_data_url === 'string' ? data.image_data_url : null;
+    const imageUrl = typeof data.image_url === 'string' ? data.image_url : null;
+    const cacheKey = typeof data.image_cache_key === 'string' ? data.image_cache_key : null;
+    const imageUpdatedAt = typeof data.image_updated_at === 'string' ? data.image_updated_at : null;
+
+    return {
+      imageDataUrl,
+      imageUrl,
+      cacheKey,
+      imageUpdatedAt
+    };
+  } catch (error) {
+    console.warn('⚠️ Bootstrap kép lekérési hiba:', error);
+    return null;
+  }
+}
+
+function scheduleBootstrapCarsRefresh(cars) {
+  if (!Array.isArray(cars)) {
+    return;
+  }
+
+  pendingBootstrapCarsRefreshTarget = cars;
+
+  if (pendingBootstrapCarsRefresh) {
+    return;
+  }
+
+  pendingBootstrapCarsRefresh = true;
+
+  const run = () => {
+    pendingBootstrapCarsRefresh = false;
+    const target = pendingBootstrapCarsRefreshTarget;
+    pendingBootstrapCarsRefreshTarget = null;
+
+    if (Array.isArray(target)) {
+      refreshCarsFromBootstrap(target);
+    }
+  };
+
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(run);
+  } else {
+    setTimeout(run, 0);
+  }
+}
+
+async function processBootstrapImageQueue() {
+  if (bootstrapImageFetchProcessing) {
+    return;
+  }
+
+  bootstrapImageFetchProcessing = true;
+
+  while (bootstrapImageFetchQueue.length > 0) {
+    const item = bootstrapImageFetchQueue.shift();
+
+    if (!item) {
+      continue;
+    }
+
+    const { car, cacheKey, carId, collection } = item;
+
+    if (cacheKey) {
+      bootstrapImageFetchPendingKeys.delete(cacheKey);
+    }
+
+    if (!car || typeof car !== 'object') {
+      continue;
+    }
+
+    if (!car.hasImageDataUrl) {
+      continue;
+    }
+
+    if (typeof car.image_data_url === 'string' && car.image_data_url.trim().length > 0) {
+      continue;
+    }
+
+    const resolvedCarId = carId || car.id || car.car_id;
+
+    if (!resolvedCarId) {
+      continue;
+    }
+
+    const payload = await fetchBootstrapImageData(resolvedCarId);
+
+    if (!payload) {
+      continue;
+    }
+
+    const resolvedCacheKey = cacheKey || payload.cacheKey || createImageCacheKey(car, 0);
+    const dataUrl = typeof payload.imageDataUrl === 'string' && payload.imageDataUrl.trim().length > 0
+      ? payload.imageDataUrl
+      : null;
+    const imageUrl = typeof payload.imageUrl === 'string' && payload.imageUrl.trim().length > 0
+      ? payload.imageUrl
+      : null;
+
+    let updated = false;
+
+    if (dataUrl) {
+      car.image_data_url = dataUrl;
+      car.hasImageDataUrl = true;
+      if (resolvedCacheKey) {
+        car.imageCacheKey = resolvedCacheKey;
+        cacheBootstrapImageRecord(resolvedCacheKey, dataUrl);
+      }
+      updated = true;
+    } else if (imageUrl) {
+      car.image_data_url = imageUrl;
+      car.hasImageDataUrl = true;
+      updated = true;
+    } else {
+      car.hasImageDataUrl = false;
+    }
+
+    if (updated) {
+      scheduleBootstrapCarsRefresh(collection);
+    }
+  }
+
+  bootstrapImageFetchProcessing = false;
+}
+
+function scheduleBootstrapImageFetches(data) {
+  if (!data || typeof data !== 'object' || !Array.isArray(data.cars)) {
+    return;
+  }
+
+  data.cars.forEach((car, index) => {
+    if (!car || typeof car !== 'object') {
+      return;
+    }
+
+    if (!car.hasImageDataUrl) {
+      return;
+    }
+
+    if (typeof car.image_data_url === 'string' && car.image_data_url.trim().length > 0) {
+      return;
+    }
+
+    const cacheKey = car.imageCacheKey || createImageCacheKey(car, index);
+
+    if (!cacheKey || bootstrapImageFetchPendingKeys.has(cacheKey)) {
+      return;
+    }
+
+    const carId = car.id || car.car_id;
+
+    bootstrapImageFetchPendingKeys.add(cacheKey);
+    bootstrapImageFetchQueue.push({
+      car,
+      cacheKey,
+      carId,
+      collection: data.cars
+    });
+  });
+
+  if (bootstrapImageFetchQueue.length === 0 || bootstrapImageFetchProcessing) {
+    return;
+  }
+
+  if (bootstrapImageFetchScheduledHandle) {
+    return;
+  }
+
+  if (typeof requestIdleCallback === 'function') {
+    bootstrapImageFetchScheduledViaIdle = true;
+    bootstrapImageFetchScheduledHandle = requestIdleCallback(() => {
+      bootstrapImageFetchScheduledHandle = null;
+      bootstrapImageFetchScheduledViaIdle = false;
+      processBootstrapImageQueue().catch(error => {
+        console.warn('⚠️ Bootstrap kép feldolgozási hiba:', error);
+      });
+    }, { timeout: BOOTSTRAP_IMAGE_FETCH_IDLE_TIMEOUT_MS });
+  } else {
+    bootstrapImageFetchScheduledViaIdle = false;
+    bootstrapImageFetchScheduledHandle = setTimeout(() => {
+      bootstrapImageFetchScheduledHandle = null;
+      processBootstrapImageQueue().catch(error => {
+        console.warn('⚠️ Bootstrap kép feldolgozási hiba:', error);
+      });
+    }, BOOTSTRAP_IMAGE_FETCH_DELAY_MS);
+  }
+}
+
+function ensureBootstrapImages(data) {
+  if (!data || typeof data !== 'object') {
+    return;
+  }
+
+  queueBootstrapImageRehydration(data);
+  scheduleBootstrapImageFetches(data);
+}
+
+async function rehydrateBootstrapImages(data) {
+  if (!data || typeof data !== 'object' || !Array.isArray(data.cars)) {
+    return false;
+  }
+
+  const carsNeedingImages = data.cars
+    .map((car, index) => {
+      if (!car || typeof car !== 'object') {
+        return null;
+      }
+
+      if (typeof car.image_data_url === 'string' && car.image_data_url.trim().length > 0) {
+        return null;
+      }
+
+      if (!car.hasImageDataUrl) {
+        return null;
+      }
+
+      const cacheKey = car.imageCacheKey || createImageCacheKey(car, index);
+
+      if (!cacheKey) {
+        return null;
+      }
+
+      return {
+        car,
+        cacheKey
+      };
+    })
+    .filter(Boolean);
+
+  if (carsNeedingImages.length === 0) {
+    return false;
+  }
+
+  const db = await openBootstrapImageDb();
+  if (!db) {
+    return false;
+  }
+
+  let updated = false;
+
+  await new Promise(resolve => {
+    const tx = db.transaction(BOOTSTRAP_IMAGE_OBJECT_STORE, 'readonly');
+    const store = tx.objectStore(BOOTSTRAP_IMAGE_OBJECT_STORE);
+
+    carsNeedingImages.forEach(({ car, cacheKey }) => {
+      try {
+        const request = store.get(cacheKey);
+        request.onsuccess = event => {
+          const record = event.target.result;
+          if (record && typeof record.dataUrl === 'string') {
+            car.image_data_url = record.dataUrl;
+            car.hasImageDataUrl = true;
+            car.imageCacheKey = cacheKey;
+            updated = true;
+          }
+        };
+        request.onerror = () => {
+          console.warn('⚠️ Bootstrap kép beolvasási hiba:', request.error);
+        };
+      } catch (error) {
+        console.warn('⚠️ Bootstrap kép lekérési hiba:', error);
+      }
+    });
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => {
+      console.warn('⚠️ Bootstrap kép olvasási tranzakció hiba:', tx.error);
+      resolve();
+    };
+  });
+
+  return updated;
+}
+
+function refreshCarsFromBootstrap(cars) {
+  if (!Array.isArray(cars)) {
+    return;
+  }
+
+  try {
+    if (typeof setCars === 'function') {
+      setCars(cars);
+      return;
+    }
+
+    const prepared = typeof transformCarRow === 'function'
+      ? cars.map(transformCarRow).filter(Boolean)
+      : cars.slice();
+
+    allCars = prepared;
+    carsLoaded = true;
+
+    if (typeof renderCars === 'function') {
+      renderCars(allCars);
+    }
+  } catch (error) {
+    console.warn('⚠️ Bootstrap autó lista frissítés hiba:', error);
+  }
+}
+
+function queueBootstrapImageRehydration(data) {
+  if (!data || typeof data !== 'object') {
+    return;
+  }
+
+  try {
+    const promise = rehydrateBootstrapImages(data);
+    if (!promise || typeof promise.then !== 'function') {
+      return;
+    }
+
+    promise
+      .then(updated => {
+        if (updated) {
+          scheduleBootstrapCarsRefresh(data.cars);
+        }
+      })
+      .catch(error => {
+        console.warn('⚠️ Bootstrap kép rehidrálási hiba:', error);
+      });
+  } catch (error) {
+    console.warn('⚠️ Bootstrap kép rehidrálás ütemezési hiba:', error);
+  }
+}
+
+function clearCachedBootstrapData() {
+  if (bootstrapCacheDisabled) {
+    return;
+  }
+
+  cancelPendingBootstrapPersistence();
+
+  try {
+    localStorage.removeItem(LOCAL_BOOTSTRAP_CACHE_KEY);
+  } catch (error) {
+    console.warn('⚠️ Bootstrap cache clear error:', error);
+  }
+
+  persistBootstrapImages([], []).catch(error => {
+    console.warn('⚠️ Bootstrap kép gyorsítótár törlési hiba:', error);
+  });
+}
+
+function resetBootstrapRefetchState() {
+  bootstrapRefetchAttempts = 0;
+  if (bootstrapRefetchTimer) {
+    clearTimeout(bootstrapRefetchTimer);
+    bootstrapRefetchTimer = null;
+  }
+}
+
+function scheduleBootstrapRefetch() {
+  if (bootstrapRefetchAttempts >= MAX_BOOTSTRAP_REFETCH_ATTEMPTS) {
+    return;
+  }
+
+  if (bootstrapRefetchTimer) {
+    return;
+  }
+
+  const delay = Math.pow(2, bootstrapRefetchAttempts) * BOOTSTRAP_REFETCH_BASE_DELAY_MS;
+
+  bootstrapRefetchTimer = setTimeout(async () => {
+    bootstrapRefetchTimer = null;
+    bootstrapRefetchAttempts += 1;
+
+    try {
+      const result = await fetchBootstrapData();
+
+      if (processBootstrapResult(result)) {
+        return;
+      }
+
+      if (bootstrapRefetchAttempts < MAX_BOOTSTRAP_REFETCH_ATTEMPTS) {
+        scheduleBootstrapRefetch();
+      }
+    } catch (error) {
+      console.warn('⚠️ Bootstrap refetch attempt failed:', error);
+      if (bootstrapRefetchAttempts < MAX_BOOTSTRAP_REFETCH_ATTEMPTS) {
+        scheduleBootstrapRefetch();
+      }
+    }
+  }, delay);
+}
+
+function handleBootstrapRefetch(cacheStatus) {
+  if (!cacheStatus) {
+    resetBootstrapRefetchState();
+    return;
+  }
+
+  const normalized = cacheStatus.toLowerCase();
+
+  if (normalized === 'hit' || normalized === 'miss') {
+    resetBootstrapRefetchState();
+    return;
+  }
+
+  if (normalized === 'stale' || normalized === 'stale-error') {
+    scheduleBootstrapRefetch();
+    return;
+  }
+
+  resetBootstrapRefetchState();
+}
+
+function processBootstrapResult(result, { persist = true } = {}) {
+  if (!result || !result.data) {
+    return false;
+  }
+
+  const applied = applyBootstrapData(result.data);
+
+  if (!applied) {
+    return false;
+  }
+
+  if (persist) {
+    scheduleBootstrapPersistence(result.data);
+  }
+
+  handleBootstrapRefetch(result.cacheStatus);
+  return true;
+}
+
 async function fetchBootstrapData() {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = controller
+    ? setTimeout(() => {
+        if (!controller.signal.aborted) {
+          controller.abort();
+        }
+      }, BOOTSTRAP_TIMEOUT_MS)
+    : null;
+
   try {
     const response = await fetch(`${API_BASE_URL}/bootstrap.php`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json'
       },
-      cache: 'no-store'
+      cache: 'no-store',
+      signal: controller ? controller.signal : undefined
     });
 
     const payload = await response.json();
@@ -242,16 +1262,38 @@ async function fetchBootstrapData() {
       throw new Error(errorMessage);
     }
 
-    return payload.data;
+    const cacheHeader = response.headers ? response.headers.get('X-Bootstrap-Cache') : null;
+    const cacheStatus = cacheHeader ? cacheHeader.toLowerCase() : null;
+
+    return {
+      data: payload.data,
+      cacheStatus
+    };
   } catch (error) {
-    console.warn('⚠️ Bootstrap betöltés sikertelen, visszatérés az egyedi lekérésekre', error);
+    const abortErrorCode = typeof DOMException !== 'undefined' ? DOMException.ABORT_ERR : 20;
+    const isAbortError = error && (error.name === 'AbortError' || error.code === abortErrorCode);
+
+    if (isAbortError) {
+      console.warn(`⏳ Bootstrap betöltés megszakítva ${BOOTSTRAP_TIMEOUT_MS} ms után, átváltás egyedi lekérésekre`);
+    } else {
+      console.warn('⚠️ Bootstrap betöltés sikertelen, visszatérés az egyedi lekérésekre', error);
+    }
+
     return null;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 
 function applyBootstrapData(data) {
   if (!data || typeof data !== 'object') {
     return false;
+  }
+
+  if (Array.isArray(data.cars)) {
+    data.cars = normalizeBootstrapCars(data.cars);
   }
 
   if (Array.isArray(data.tuningOptions)) {
@@ -299,6 +1341,8 @@ function applyBootstrapData(data) {
     }
   }
 
+  ensureBootstrapImages(data);
+
   return true;
 }
 
@@ -306,11 +1350,39 @@ async function loadAllData() {
   try {
     console.log('🔄 Összes adat betöltése...');
 
-    const bootstrapData = await fetchBootstrapData();
+    resetBootstrapRefetchState();
 
-    if (bootstrapData) {
-      applyBootstrapData(bootstrapData);
-    } else {
+    const cachedBootstrap = await loadCachedBootstrapData();
+    let appliedCachedData = false;
+
+    if (cachedBootstrap) {
+      appliedCachedData = applyBootstrapData(cachedBootstrap);
+      if (appliedCachedData) {
+        console.log('⚡️ Bootstrap adatok helyi gyorsítótárból betöltve');
+      }
+    }
+
+    const bootstrapPromise = fetchBootstrapData();
+
+    if (appliedCachedData) {
+      bootstrapPromise
+        .then(result => {
+          if (!processBootstrapResult(result)) {
+            console.warn('⚠️ Bootstrap frissítés nem alkalmazható, marad a gyorsítótár');
+          }
+        })
+        .catch(error => {
+          console.warn('⚠️ Bootstrap frissítés sikertelen:', error);
+        });
+
+      console.log('✅ Összes adat sikeresen betöltve (helyi gyorsítótár)');
+      return;
+    }
+
+    const bootstrapResult = await bootstrapPromise;
+
+    if (!processBootstrapResult(bootstrapResult)) {
+      clearCachedBootstrapData();
       await Promise.all([
         loadTuningOptions(),
         loadModelOptions(),
